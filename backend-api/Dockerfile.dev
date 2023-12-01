@@ -1,0 +1,24 @@
+# Utilisez une image Node.js avec les outils de développement (comme nodemon)
+FROM node:18.0.0-alpine AS development
+
+# Définissez des variables d'environnement pour le développement
+ENV NODE_ENV=development
+ENV PORT=3000
+
+# Créez un répertoire de travail dans le conteneur
+WORKDIR /app
+
+# Copiez les fichiers de votre application
+COPY . .
+
+# Installez dumb-init
+
+
+# Installez toutes les dépendances (y compris les dépendances de développement) avec Yarn
+RUN yarn install
+
+# Exposez le port sur lequel l'application sera exécutée en développement
+EXPOSE $PORT
+
+# Commande par défaut pour exécuter l'application avec nodemon
+CMD ["npm", "run", "dev"]
