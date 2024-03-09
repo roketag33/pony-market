@@ -24,7 +24,7 @@ export class CreateUserDto {
   @IsString()
   lastName?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   role: Role;
 
   @IsNotEmpty()

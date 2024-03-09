@@ -43,6 +43,8 @@ model User {
   lastName                  String?
   role                      Role     @default(USER)
   status                    Status   @default(PENDING)
+  refreshToken              String?  @unique
+  refreshTokenExpiry        DateTime?
   emailVerified             Boolean  @default(false)
   emailVerificationToken    String?
   passwordResetToken        String?
