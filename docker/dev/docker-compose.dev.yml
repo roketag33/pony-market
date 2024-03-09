@@ -2,38 +2,23 @@ version: '3'
 name: pony-market-dev
 services:
 
-  # adonis_app_dev:
-  #   container_name: adonis_app_dev
-  #   restart: always
-  #   build:
-  #     context: "../../backend-api/"
-  #     dockerfile: Dockerfile.dev
-  #   ports:
-  #     - "3333:3333"
-  #   env_file:
-  #     - "../../backend-api/.env"
-  #   volumes:
-  #     - ./:/home/node/app
-  #   command:  node ace serve --watch --node-args="--inspect=0.0.0.0"
-  #   depends_on:
-  #     - db_dev
 
   nestjs_app_dev:
     container_name: nestjs_app_dev
     restart: always
     build:
-      context: "../../backend/" # Mettez à jour avec le chemin réel vers votre application NestJS
-      dockerfile: Dockerfile # Assurez-vous que ce chemin correspond à l'emplacement de votre Dockerfile NestJS
+      context: ../../../pony market/backend/
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000" # Exposez le port sur lequel votre application NestJS écoute
+      - "3000:3000"
     volumes:
-      - ../../backend:/home/src/app # Mettez à jour avec le chemin réel vers votre application NestJS
-      - /home/src/app/node_modules # Assurez-vous que le chemin correspond à l'emplacement de votre dossier node_modules
-    command: npm run start:dev  # Ou toute autre commande que vous utilisez pour démarrer votre application NestJS en mode dev
+      - ../../../backend:/home/src/app
+      - /home/src/app/node_modules
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
-      - db_dev # Si votre application NestJS dépend de la base de données
+      - db_dev
 
   db_dev:
     container_name: database
@@ -46,13 +31,6 @@ services:
     ports:
       - "5432:5432"
 
-  # pgadmin_dev:
-  #   image: dpage/pgadmin4
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-  #   ports:
-  #     - "80:80"
 
   adminer:
     image: adminer
