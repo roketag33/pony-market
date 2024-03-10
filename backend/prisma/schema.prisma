@@ -55,6 +55,11 @@ model User {
   bio String?
   dateOfBirth DateTime?
   phoneNumber String? @unique
+  address String?
+  city String?
+  country String?
+  zipCode String?
+  products Product[]
   articles Post[]
   orders Order[]
   reviews Review[]
@@ -81,19 +86,24 @@ model Post {
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String
-  price       Float
-  categoryId  Int
-  images      String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  reviews     Review[]
-  wishlist    Wishlist[]
-  category    Category @relation(fields: [categoryId], references: [id])
-  events      Event[]
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  name          String
+  description   String
+  price         Float
+  brand         String?
+  categoryId    Int? // Rendez cette ligne optionnelle
+  images        String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  reviews       Review[]
+  wishlist      Wishlist[]
+  category      Category? @relation(fields: [categoryId], references: [id])
+  events        Event[]
 }
+
+
 
 model Category {
   id        Int      @id @default(autoincrement())

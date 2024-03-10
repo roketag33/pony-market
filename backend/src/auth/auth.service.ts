@@ -3,6 +3,7 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid'; // Assurez-vous d'installer uuid avec npm ou yarn
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -21,18 +22,35 @@ export class AuthService {
     throw new UnauthorizedException('Informations de connexion incorrectes.');
   }
 
-  async login(user: any) {
-    const payload = { username: user.username, sub: user.userId };
+  // AuthService - Méthode login mise à jour
+  async login(loginDto: LoginDto) {
+    const user = await this.userService.findOneByEmail(loginDto.email);
+
+    if (!user) {
+      throw new UnauthorizedException('Email ou mot de passe incorrect.');
+    }
+
+    const passwordIsValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
+
+    if (!passwordIsValid) {
+      throw new UnauthorizedException('Email ou mot de passe incorrect.');
+    }
+
+    const payload = { email: user.email, sub: user.id };
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '15m', // Exemple d'expiration
+      secret: process.env.JWT_SECRET, // Assurez-vous que la clé secrète est bien définie
+      expiresIn: '60m', // Durée de vie du token d'accès
     });
 
-    const refreshToken = uuidv4(); // Générez un refresh token
+    const refreshToken = uuidv4();
     const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // Exemple de durée de vie du refresh token
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // Expiration dans 7 jours
 
     await this.userService.setRefreshToken(
-      user.userId,
+      user.id,
       refreshToken,
       refreshTokenExpiry,
     );

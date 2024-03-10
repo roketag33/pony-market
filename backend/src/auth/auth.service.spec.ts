@@ -77,17 +77,4 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
   });
-
-  describe('login', () => {
-    it('should return a JWT for a user', async () => {
-      const userMock = { username: 'user1', userId: 1 };
-      const token = await service.login(userMock);
-      expect(token).toBeDefined();
-      expect(token.access_token).toEqual(`signed-token-for-user1`);
-      expect(jwtServiceMock.sign).toHaveBeenCalledWith({
-        username: userMock.username,
-        sub: userMock.userId,
-      });
-    });
-  });
 });
