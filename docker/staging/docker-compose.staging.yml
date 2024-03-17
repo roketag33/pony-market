@@ -1,0 +1,32 @@
+version: '3'
+services:
+
+  adonis_app_staging:
+    container_name: adonis_app_staging
+    restart: always
+    build:
+      context: "../../backend-api/"
+      dockerfile: Dockerfile.staging  # Utilisez le Dockerfile de staging
+    ports:
+      - "8080:80"  # Port HTTP pour le staging
+    env_file:
+      - ./backend-api/.env.staging  # Utilisez un fichier .env.staging spécifique au staging
+    volumes:
+      - ./backend-api/build:/home/node/app/build
+    command: dumb-init node server.js
+    depends_on:
+      - db_staging  # Utilisez une base de données de staging
+
+  db_staging:
+    container_name: staging-db
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: Staging_Pony_Market
+      POSTGRES_USER: staging-aaalex324
+      POSTGRES_PASSWORD: staging-nkdogfjo3R314
+    ports:
+      - "5434:5432"  # Port différent pour éviter les conflits avec d'autres bases de données
+
+volumes:
+  pgdata_staging:  # Utilisez un volume différent pour la base de données de staging

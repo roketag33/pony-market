@@ -1,0 +1,33 @@
+version: '3'
+services:
+
+  adonis_app_prod:
+    container_name: adonis_app_prod
+    restart: always
+    build:
+      context: "../../backend-api/"
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    env_file:
+      - ./backend-api/.env.prod
+    volumes:
+      - ./backend-api/build:/home/node/app/build
+    command: dumb-init node server.js
+    depends_on:
+      - db_prod
+
+  db_prod:
+    container_name: prod-db
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_PROD}
+      POSTGRES_USER: ${POSTGRES_USER_PROD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_PROD}
+    ports:
+      - "5432:5432"
+
+
+volumes:
+  pgdata_prod:

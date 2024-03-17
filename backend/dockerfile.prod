@@ -1,0 +1,21 @@
+# Base image
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production
+
+# Copy project files
+COPY . .
+
+# Build the application
+RUN yarn build
+
+# Set user to node for security
+USER node
+
+# Command to run on container start
+CMD ["yarn", "start:prod"]

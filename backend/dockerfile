@@ -1,0 +1,18 @@
+# Base image
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY package.json yarn.lock ./
+RUN yarn install
+
+# Copy project files
+COPY . .
+
+# Set user to node
+USER node
+
+# Command to run on container start
+CMD ["yarn", "start:dev"]
