@@ -1,29 +1,53 @@
-// src/product/product.controller.ts
-
 import {
   Controller,
-  Get,
+  UseGuards,
   Post,
   Body,
   Param,
   Delete,
   Put,
-  UseGuards,
+  Get,
+  UseInterceptors,
+  UploadedFiles,
   Request,
+  Req,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Assurez-vous que le chemin est correct
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
-@UseGuards(JwtAuthGuard) // Appliquez JwtAuthGuard à tout le contrôleur si toutes les routes nécessitent une authentification
+@UseGuards(JwtAuthGuard)
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  create(@Body() createProductDto: CreateProductDto, @Request() req: any) {
-    // Supposons que req.user contienne l'ID de l'utilisateur (req.user.userId)
-    return this.productService.create(req.user.userId, createProductDto);
+  @UseInterceptors(
+    FilesInterceptor('images', 20, {
+      storage: diskStorage({
+        destination: './uploads/products',
+        filename: (req, file, callback) => {
+          const name = file.originalname.split('.')[0];
+          const fileExtName = extname(file.originalname);
+          const randomName = Array(4)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          callback(null, `${name}-${randomName}${fileExtName}`);
+        },
+      }),
+    }),
+  )
+  async create(
+    @Req() req,
+    @Body() createProductDto: CreateProductDto,
+    @UploadedFiles() images: Array<Express.Multer.File>,
+  ) {
+    const userId = req.user.userId;
+    return this.productService.create(userId, createProductDto, images);
   }
 
   @Get()

@@ -6,13 +6,16 @@ WORKDIR /usr/src/app
 
 # Install dependencies
 COPY package.json yarn.lock ./
-RUN yarn install
+RUN yarn install --frozen-lockfile
 
 # Copy project files
 COPY . .
+
+# Build the application
+RUN yarn build
 
 # Set user to node
 USER node
 
 # Command to run on container start
-CMD ["yarn", "start:dev"]
+CMD ["yarn", "start:prod"]

@@ -2,14 +2,17 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid'; // Assurez-vous d'installer uuid avec npm ou yarn
+import { v4 as uuidv4 } from 'uuid';
 import { LoginDto } from './dto/login.dto';
+import { PrismaService } from 'src/tools/prisma/prisma.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private prisma: PrismaService,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
@@ -22,7 +25,6 @@ export class AuthService {
     throw new UnauthorizedException('Informations de connexion incorrectes.');
   }
 
-  // AuthService - Méthode login mise à jour
   async login(loginDto: LoginDto) {
     const user = await this.userService.findOneByEmail(loginDto.email);
 
@@ -41,13 +43,13 @@ export class AuthService {
 
     const payload = { email: user.email, sub: user.id };
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET, // Assurez-vous que la clé secrète est bien définie
-      expiresIn: '60m', // Durée de vie du token d'accès
+      secret: process.env.JWT_SECRET,
+      expiresIn: '60m',
     });
 
     const refreshToken = uuidv4();
     const refreshTokenExpiry = new Date();
-    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7); // Expiration dans 7 jours
+    refreshTokenExpiry.setDate(refreshTokenExpiry.getDate() + 7);
 
     await this.userService.setRefreshToken(
       user.id,
@@ -65,13 +67,12 @@ export class AuthService {
     const user = await this.userService.validateRefreshToken(refreshToken);
     const payload = { email: user.email, sub: user.id };
     const newAccessToken = this.jwtService.sign(payload, {
-      expiresIn: '15m', // Nouvelle expiration
+      expiresIn: '15m',
     });
 
-    // Générez un nouveau refresh token pour chaque rafraîchissement (optionnel)
     const newRefreshToken = uuidv4();
     const newRefreshTokenExpiry = new Date();
-    newRefreshTokenExpiry.setDate(newRefreshTokenExpiry.getDate() + 7); // Nouvelle durée de vie
+    newRefreshTokenExpiry.setDate(newRefreshTokenExpiry.getDate() + 7);
 
     await this.userService.setRefreshToken(
       user.id,
@@ -87,6 +88,34 @@ export class AuthService {
 
   async logout(userId: number) {
     await this.userService.clearRefreshToken(userId);
-    // Vous pourriez ajouter d'autres logiques pour gérer la déconnexion, si nécessaire
+  }
+
+  private async findOrCreate(profile: any) {
+    const email = profile.emails[0].value;
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      const randomPassword = randomBytes(16).toString('hex');
+
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          firstName: profile.name.givenName,
+          lastName: profile.name.familyName,
+          password: randomPassword,
+        },
+      });
+    }
+
+    return user;
+  }
+
+  async validateOAuthLogin(profile: any): Promise<string> {
+    const user = await this.findOrCreate(profile);
+
+    const payload = { email: user.email, sub: user.id };
+    return this.jwtService.sign(payload);
   }
 }

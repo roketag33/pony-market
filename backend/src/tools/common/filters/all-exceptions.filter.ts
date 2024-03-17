@@ -26,15 +26,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
-    // Amélioration de la structure du message pour les erreurs HTTP
     if (typeof message === 'object' && message.hasOwnProperty('message')) {
       message = (message as any).message;
     } else if (typeof message === 'object') {
-      // Assurez-vous que le message est sérialisable correctement
       message = JSON.stringify(message);
     }
 
-    // Logging des erreurs internes du serveur
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         `Unexpected error: ${exception}`,

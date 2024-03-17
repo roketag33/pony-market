@@ -7,12 +7,16 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductModule } from './product/product.module';
+import { CategoryModule } from './Category/category.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
     UserModule,
     AuthModule,
     ProductModule,
+    CategoryModule,
+    OrderModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -21,6 +25,6 @@ import { ProductModule } from './product/product.module';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DevtoolsModule, ConfigModule],
 })
 export class AppModule {}

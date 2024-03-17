@@ -36,43 +36,46 @@ enum OrderStatus {
 
 // Modèle User complet
 model User {
-  id                        Int      @id @default(autoincrement())
-  email                     String   @unique
-  password                  String
-  firstName                 String?
-  lastName                  String?
-  role                      Role     @default(USER)
-  status                    Status   @default(PENDING)
-  refreshToken              String?  @unique
-  refreshTokenExpiry        DateTime?
-  emailVerified             Boolean  @default(false)
-  emailVerificationToken    String?
-  passwordResetToken        String?
-  passwordResetTokenExpiry  DateTime?
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-  avatarUrl String?
-  bio String?
-  dateOfBirth DateTime?
-  phoneNumber String? @unique
-  address String?
-  city String?
-  country String?
-  zipCode String?
-  products Product[]
-  articles Post[]
-  orders Order[]
-  reviews Review[]
-  wishlist Wishlist[]
-  transactions Transaction[]
-  feedbacks UserFeedback[]
+  id                  Int            @id @default(autoincrement())
+  email               String         @unique
+  password            String
+  firstName           String?
+  lastName            String?
+  role                Role           @default(USER)
+  status              Status         @default(PENDING)
+  refreshToken        String?        @unique
+  refreshTokenExpiry  DateTime?
+  emailVerified       Boolean        @default(false)
+  emailVerificationToken String?
+  passwordResetToken  String?
+  passwordResetTokenExpiry DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  avatarUrl           String?
+  bio                 String?
+  dateOfBirth         DateTime?
+  phoneNumber         String?        @unique
+  address             String?
+  city                String?
+  country             String?
+  zipCode             String?
+  products            Product[]
+  articles            Post[]
+  buyerOrders         Order[]        @relation("BuyerOrders")
+  sellerOrders        Order[]        @relation("SellerOrders")
+  buyerTransactions   Transaction[]  @relation("BuyerTransactions")
+  sellerTransactions  Transaction[]  @relation("SellerTransactions")
+  reviews             Review[]
+  wishlist            Wishlist[]
+  feedbacks           UserFeedback[]
   categorySubscriptions CategorySubscription[]
   favoriteSellersAsUser   FavoriteSeller[] @relation("UserFavorites")
   favoriteSellersAsSeller FavoriteSeller[] @relation("SellerFavorites")
-  sentMessages Message[] @relation("messageSender")
-  receivedMessages Message[] @relation("messageReceiver")
-  
+  sentMessages        Message[]      @relation("messageSender")
+  receivedMessages    Message[]      @relation("messageReceiver")
 }
+
+
 
 
 model Post {
@@ -93,37 +96,42 @@ model Product {
   description   String
   price         Float
   brand         String?
-  categoryId    Int? // Rendez cette ligne optionnelle
+  categoryId    Int?
   images        String[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   reviews       Review[]
   wishlist      Wishlist[]
   category      Category? @relation(fields: [categoryId], references: [id])
+  orders      Order[]   @relation("OrderProducts")
   events        Event[]
+
 }
 
 
-
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      String
-  products  Product[]
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  parentId  Int?        @map("parent_id")
+  parent    Category?   @relation("ParentChild", fields: [parentId], references: [id])
+  children  Category[]  @relation("ParentChild")
+  products              Product[]
   categorySubscriptions CategorySubscription[]
 }
 
 
 model Order {
   id          Int       @id @default(autoincrement())
-  userId      Int
-  products    Json      // Peut contenir des détails sur les produits commandés et les quantités
+  buyerId     Int
+  sellerId    Int
+  products    Product[] @relation("OrderProducts")
   totalPrice  Float
   status      OrderStatus
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id])
+  buyer       User      @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller      User      @relation("SellerOrders", fields: [sellerId], references: [id])
   transactions Transaction[]
-
 }
 
 
@@ -149,17 +157,18 @@ model Wishlist {
 
 
 
-model Transaction {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  orderId       Int
-  transactionType String // "ACHAT" ou "VENTE"
-  amount        Float
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id])
-  order         Order    @relation(fields: [orderId], references: [id])
-}
 
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id])
+  amount    Float
+  createdAt DateTime @default(now())
+  buyerId   Int
+  sellerId  Int
+  buyer     User     @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  seller    User     @relation("SellerTransactions", fields: [sellerId], references: [id])
+}
 model Event {
   id          Int      @id @default(autoincrement())
   name        String

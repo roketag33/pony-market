@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -10,11 +10,11 @@ export class CreateProductDto {
   @IsNumber()
   readonly price: number;
 
+  @IsString()
   @IsOptional()
-  @IsNumber()
-  readonly categoryId: number;
+  readonly brand?: string;
 
-  @IsArray()
+  @IsNumber()
   @IsOptional()
-  readonly images?: string[];
+  readonly categoryId?: number;
 }

@@ -1,37 +1,67 @@
 import {
+  BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { Role } from '../user/enums/user.enums'; // Assurez-vous que le chemin d'importation de l'enum Role est correct
+import { Role } from '../user/enums/user.enums';
 
 @Injectable()
 export class ProductService {
+  private readonly baseUrl: string =
+    process.env.BASE_URL || 'http://monapplication.com';
+
   constructor(private prisma: PrismaService) {}
 
-  async create(userId: number, createProductDto: CreateProductDto) {
-    return this.prisma.product.create({
-      data: {
-        ...createProductDto,
-        userId,
-      },
-    });
+  async create(
+    userId: number,
+    createProductDto: CreateProductDto,
+    imageFiles: Express.Multer.File[],
+  ) {
+    if (!imageFiles || imageFiles.length === 0) {
+      throw new BadRequestException('No images provided');
+    }
+
+    const imagePaths = imageFiles.map((file) => file.path);
+
+    try {
+      return await this.prisma.product.create({
+        data: {
+          ...createProductDto,
+          userId,
+          images: imagePaths,
+        },
+      });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw new InternalServerErrorException('Failed to create product');
+    }
   }
 
   async findAll() {
-    return this.prisma.product.findMany();
+    const products = await this.prisma.product.findMany();
+    return products.map((product) => ({
+      ...product,
+      images: product.images.map((image) => `${this.baseUrl}/uploads/${image}`),
+    }));
   }
 
   async findOne(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
     });
+
     if (!product) {
       throw new NotFoundException(`Product with ID "${id}" not found`);
     }
-    return product;
+
+    return {
+      ...product,
+      images: product.images.map((image) => `${this.baseUrl}/uploads/${image}`),
+    };
   }
 
   async update(userId: number, id: number, updateProductDto: CreateProductDto) {

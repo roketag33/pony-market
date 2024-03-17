@@ -9,10 +9,3 @@ export enum Status {
   SUSPENDED = 'SUSPENDED',
   PENDING = 'PENDING',
 }
-
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  SHIPPED = 'SHIPPED',
-  DELIVERED = 'DELIVERED',
-  CANCELLED = 'CANCELLED',
-}
