@@ -3,14 +3,22 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Role } from './enums/user.enums';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as handlebars from 'handlebars';
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -20,20 +28,53 @@ export class UserService {
       role: Role.USER,
     };
 
+    let newUser;
     try {
-      return await this.prisma.user.create({
-        data: user,
+      newUser = await this.prisma.user.create({ data: user });
+
+      const templateSource = fs.readFileSync(
+        path.join(
+          __dirname,
+          '..',
+          'mail',
+          'templates',
+          'welcome-email.handlebars',
+        ),
+        'utf8',
+      );
+      const template = handlebars.compile(templateSource);
+      const htmlToSend = template({
+        username: newUser.firstName || 'Utilisateur',
       });
+
+      try {
+        await this.mailService.sendEmail(
+          newUser.email,
+          'Bienvenue sur notre plateforme !',
+          'Votre compte a été créé avec succès.',
+          htmlToSend,
+        );
+      } catch (mailError) {
+        console.error("Erreur lors de l'envoi de l'email :", mailError);
+      }
     } catch (error) {
       if (error.code === 'P2002') {
         throw new BadRequestException(
           'Un utilisateur avec cet e-mail existe déjà.',
         );
+      } else if (error instanceof Error && error.message.includes('ENOENT')) {
+        throw new InternalServerErrorException(
+          "Le template d'email n'a pas été trouvé.",
+        );
+      } else {
+        console.error("Erreur lors de la création de l'utilisateur :", error);
+        throw new InternalServerErrorException(
+          'Une erreur inattendue est survenue lors de la création du compte.',
+        );
       }
-      throw new BadRequestException(
-        "Une erreur est survenue lors de la création de l'utilisateur.",
-      );
     }
+
+    return newUser;
   }
 
   async findAll() {

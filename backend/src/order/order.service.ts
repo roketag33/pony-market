@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
@@ -17,6 +21,16 @@ export class OrderService {
     if (!buyer || !seller) {
       throw new BadRequestException('Acheteur ou vendeur introuvable.');
     }
+    const products = await this.prisma.product.findMany({
+      where: {
+        id: { in: dto.productIds },
+      },
+    });
+    if (products.length !== dto.productIds.length) {
+      throw new BadRequestException(
+        'Un ou plusieurs produits sont introuvables.',
+      );
+    }
 
     return this.prisma.order.create({
       data: {
@@ -25,6 +39,27 @@ export class OrderService {
         totalPrice: dto.totalPrice,
         status: dto.status,
       },
+    });
+  }
+  async findOrderById(orderId: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { products: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(
+        `Commande avec l'ID "${orderId}" non trouvée.`,
+      );
+    }
+
+    return order;
+  }
+
+  async findAllOrdersByUserId(userId: number) {
+    return this.prisma.order.findMany({
+      where: { buyerId: userId },
+      include: { products: true },
     });
   }
 }

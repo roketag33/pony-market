@@ -11,7 +11,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  
 }
 
 // Définition des Enums pour les rôles et les statuts
@@ -36,127 +35,119 @@ enum OrderStatus {
 
 // Modèle User complet
 model User {
-  id                  Int            @id @default(autoincrement())
-  email               String         @unique
-  password            String
-  firstName           String?
-  lastName            String?
-  role                Role           @default(USER)
-  status              Status         @default(PENDING)
-  refreshToken        String?        @unique
-  refreshTokenExpiry  DateTime?
-  emailVerified       Boolean        @default(false)
-  emailVerificationToken String?
-  passwordResetToken  String?
+  id                       Int                      @id @default(autoincrement())
+  email                    String                   @unique
+  password                 String
+  firstName                String?
+  lastName                 String?
+  role                     Role                     @default(USER)
+  status                   Status                   @default(PENDING)
+  refreshToken             String?                  @unique
+  refreshTokenExpiry       DateTime?
+  emailVerified            Boolean                  @default(false)
+  emailVerificationToken   String?
+  passwordResetToken       String?
   passwordResetTokenExpiry DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  avatarUrl           String?
-  bio                 String?
-  dateOfBirth         DateTime?
-  phoneNumber         String?        @unique
-  address             String?
-  city                String?
-  country             String?
-  zipCode             String?
-  products            Product[]
-  articles            Post[]
-  buyerOrders         Order[]        @relation("BuyerOrders")
-  sellerOrders        Order[]        @relation("SellerOrders")
-  buyerTransactions   Transaction[]  @relation("BuyerTransactions")
-  sellerTransactions  Transaction[]  @relation("SellerTransactions")
-  reviews             Review[]
-  wishlist            Wishlist[]
-  feedbacks           UserFeedback[]
-  categorySubscriptions CategorySubscription[]
-  favoriteSellersAsUser   FavoriteSeller[] @relation("UserFavorites")
-  favoriteSellersAsSeller FavoriteSeller[] @relation("SellerFavorites")
-  sentMessages        Message[]      @relation("messageSender")
-  receivedMessages    Message[]      @relation("messageReceiver")
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  avatarUrl                String?
+  bio                      String?
+  dateOfBirth              DateTime?
+  phoneNumber              String?                  @unique
+  address                  String?
+  city                     String?
+  country                  String?
+  zipCode                  String?
+  products                 Product[]
+  articles                 Post[]
+  buyerOrders              Order[]                  @relation("BuyerOrders")
+  sellerOrders             Order[]                  @relation("SellerOrders")
+  buyerTransactions        Transaction[]            @relation("BuyerTransactions")
+  sellerTransactions       Transaction[]            @relation("SellerTransactions")
+  reviews                  Review[]
+  wishlist                 Wishlist[]
+  feedbacks                UserFeedback[]
+  categorySubscriptions    CategorySubscription[]
+  favoriteSellersAsUser    FavoriteSeller[]         @relation("UserFavorites")
+  favoriteSellersAsSeller  FavoriteSeller[]         @relation("SellerFavorites")
+  sentMessages             Message[]                @relation("messageSender")
+  receivedMessages         Message[]                @relation("messageReceiver")
+  communicationPreference  CommunicationPreference?
+  emailLogs                EmailLog[]
 }
 
-
-
-
 model Post {
-  id          Int      @id @default(autoincrement())
-  title       String
-  content     String
-  authorId    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  author      User     @relation(fields: [authorId], references: [id])
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  authorId  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id])
 }
 
 model Product {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
-  name          String
-  description   String
-  price         Float
-  brand         String?
-  categoryId    Int?
-  images        String[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  reviews       Review[]
-  wishlist      Wishlist[]
-  category      Category? @relation(fields: [categoryId], references: [id])
-  orders      Order[]   @relation("OrderProducts")
-  events        Event[]
-
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id])
+  name        String
+  description String
+  price       Float
+  brand       String?
+  categoryId  Int?
+  images      String[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  reviews     Review[]
+  wishlist    Wishlist[]
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  orders      Order[]    @relation("OrderProducts")
+  events      Event[]
 }
 
-
 model Category {
-  id        Int         @id @default(autoincrement())
-  name      String      @unique
-  parentId  Int?        @map("parent_id")
-  parent    Category?   @relation("ParentChild", fields: [parentId], references: [id])
-  children  Category[]  @relation("ParentChild")
+  id                    Int                    @id @default(autoincrement())
+  name                  String                 @unique
+  parentId              Int?                   @map("parent_id")
+  parent                Category?              @relation("ParentChild", fields: [parentId], references: [id])
+  children              Category[]             @relation("ParentChild")
   products              Product[]
   categorySubscriptions CategorySubscription[]
 }
 
-
 model Order {
-  id          Int       @id @default(autoincrement())
-  buyerId     Int
-  sellerId    Int
-  products    Product[] @relation("OrderProducts")
-  totalPrice  Float
-  status      OrderStatus
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  buyer       User      @relation("BuyerOrders", fields: [buyerId], references: [id])
-  seller      User      @relation("SellerOrders", fields: [sellerId], references: [id])
+  id           Int           @id @default(autoincrement())
+  buyerId      Int
+  sellerId     Int
+  products     Product[]     @relation("OrderProducts")
+  totalPrice   Float
+  status       OrderStatus
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  buyer        User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller       User          @relation("SellerOrders", fields: [sellerId], references: [id])
   transactions Transaction[]
 }
 
-
 model Review {
-  id         Int      @id @default(autoincrement())
-  productId  Int
-  userId     Int
-  rating     Int      // Par exemple, de 1 à 5
-  comment    String?
-  createdAt  DateTime @default(now())
-  product    Product  @relation(fields: [productId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-model Wishlist {
   id        Int      @id @default(autoincrement())
+  productId Int
   userId    Int
-  products  Product[] // Relation many-to-many implicite correctement définie
+  rating    Int // Par exemple, de 1 à 5
+  comment   String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 }
 
-
-
+model Wishlist {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  products  Product[] // Relation many-to-many implicite correctement définie
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+}
 
 model Transaction {
   id        Int      @id @default(autoincrement())
@@ -169,8 +160,9 @@ model Transaction {
   buyer     User     @relation("BuyerTransactions", fields: [buyerId], references: [id])
   seller    User     @relation("SellerTransactions", fields: [sellerId], references: [id])
 }
+
 model Event {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String
   startDate   DateTime
@@ -178,16 +170,14 @@ model Event {
   products    Product[]
 }
 
-
 model UserFeedback {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  content    String
-  rating     Int      // Par exemple, de 1 à 5
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  content   String
+  rating    Int // Par exemple, de 1 à 5
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
-
 
 model CategorySubscription {
   id         Int      @id @default(autoincrement())
@@ -203,8 +193,8 @@ model FavoriteSeller {
   userId    Int
   sellerId  Int
   createdAt DateTime @default(now())
-  user     User @relation(name: "UserFavorites", fields: [userId], references: [id])
-  seller   User @relation(name: "SellerFavorites", fields: [sellerId], references: [id])
+  user      User     @relation(name: "UserFavorites", fields: [userId], references: [id])
+  seller    User     @relation(name: "SellerFavorites", fields: [sellerId], references: [id])
 }
 
 model Message {
@@ -213,6 +203,23 @@ model Message {
   receiverId Int
   content    String
   createdAt  DateTime @default(now())
-  sender     User @relation("messageSender", fields: [senderId], references: [id])
-  receiver   User @relation("messageReceiver", fields: [receiverId], references: [id])
+  sender     User     @relation("messageSender", fields: [senderId], references: [id])
+  receiver   User     @relation("messageReceiver", fields: [receiverId], references: [id])
+}
+
+model CommunicationPreference {
+  id         Int     @id @default(autoincrement())
+  userId     Int     @unique
+  emailOptIn Boolean @default(true)
+  user       User    @relation(fields: [userId], references: [id])
+}
+
+model EmailLog {
+  id      Int      @id @default(autoincrement())
+  userId  Int?
+  email   String
+  subject String
+  content String
+  sentAt  DateTime @default(now())
+  user    User?    @relation(fields: [userId], references: [id])
 }
