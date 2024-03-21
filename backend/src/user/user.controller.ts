@@ -38,4 +38,17 @@ export class UserController {
   async remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
+  @Post('request-reset-password')
+  async requestResetPassword(@Body('email') email: string) {
+    return this.userService.requestPasswordReset(email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body('resetToken') resetToken: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.userService.resetPassword(resetToken, newPassword);
+  }
 }

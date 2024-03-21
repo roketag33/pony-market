@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import * as formData from 'form-data';
 import Mailgun from 'mailgun.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import handlebars from 'handlebars';
 
 @Injectable()
 export class MailService {
@@ -32,5 +35,29 @@ export class MailService {
     } catch (err) {
       console.error("Erreur lors de l'envoi de l'email:", err);
     }
+  }
+  async sendPasswordResetEmail(to: string, name: string, resetLink: string) {
+    const templateSource = fs.readFileSync(
+      path.join(
+        __dirname,
+        '..',
+        'mail',
+        'templates',
+        'reset-password-email.handlebars',
+      ),
+      'utf8',
+    );
+    const template = handlebars.compile(templateSource);
+    const htmlToSend = template({
+      name,
+      resetLink,
+    });
+
+    await this.sendEmail(
+      to,
+      'Réinitialisation de votre mot de passe',
+      'Vous avez demandé à réinitialiser votre mot de passe. Veuillez suivre le lien ci-dessous pour définir un nouveau mot de passe.',
+      htmlToSend,
+    );
   }
 }

@@ -13,6 +13,9 @@ import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as handlebars from 'handlebars';
+import { v4 as uuidv4 } from 'uuid';
+import { addHours } from 'date-fns';
+
 @Injectable()
 export class UserService {
   constructor(
@@ -151,6 +154,54 @@ export class UserService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null, refreshTokenExpiry: null },
+    });
+  }
+  async requestPasswordReset(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('Utilisateur non trouvé');
+    }
+
+    const resetToken = uuidv4();
+    const resetTokenExpiry = addHours(new Date(), 1); // Le token expire dans 1 heure
+
+    await this.prisma.user.update({
+      where: { email },
+      data: { resetToken, resetTokenExpiry },
+    });
+
+    const resetLink = `${process.env.BASE_URL}/reset-password?token=${resetToken}`;
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      user.firstName || 'Cher utilisateur',
+      resetLink,
+    );
+  }
+
+  // Méthode pour réinitialiser le mot de passe
+  async resetPassword(resetToken: string, newPassword: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        resetToken,
+        resetTokenExpiry: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException(
+        'Token de réinitialisation invalide ou expiré',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
     });
   }
 }

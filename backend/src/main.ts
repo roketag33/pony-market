@@ -9,6 +9,12 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     snapshot: true,
   });
+  app.enableCors({
+    origin: process.env.FRONT_ADMIN_URL, // Remplacez par l'origine de votre application front-end
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept',
+  });
+
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
