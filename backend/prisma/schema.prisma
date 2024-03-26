@@ -24,6 +24,7 @@ enum Status {
   ACTIVE
   SUSPENDED
   PENDING
+  DELETED
 }
 
 enum OrderStatus {
@@ -41,7 +42,6 @@ model User {
   firstName                String?
   lastName                 String?
   role                     Role                     @default(USER)
-  status                   Status                   @default(PENDING)
   refreshToken             String?                  @unique
   refreshTokenExpiry       DateTime?
   emailVerified            Boolean                  @default(false)
@@ -50,6 +50,7 @@ model User {
   resetTokenExpiry         DateTime?
   createdAt                DateTime                 @default(now())
   updatedAt                DateTime                 @updatedAt
+  status   Status    @default(ACTIVE) // Utilisez l'enum Status avec une valeur par défaut à ACTIVE
   avatarUrl                String?
   bio                      String?
   dateOfBirth              DateTime?

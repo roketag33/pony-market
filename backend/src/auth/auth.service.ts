@@ -3,7 +3,7 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import { LoginDto } from './dto/login.dto';
+import { Logindto } from './dto/login.dto';
 import { PrismaService } from 'src/tools/prisma/prisma.service';
 import { randomBytes } from 'crypto';
 
@@ -25,14 +25,14 @@ export class AuthService {
     throw new UnauthorizedException('Informations de connexion incorrectes.');
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.userService.findOneByEmail(loginDto.email);
+  async login(logindto: Logindto) {
+    const user = await this.userService.findOneByEmail(logindto.email);
     if (!user) {
       throw new UnauthorizedException('Email ou mot de passe incorrect.');
     }
 
     const passwordIsValid = await bcrypt.compare(
-      loginDto.password,
+      logindto.password,
       user.password,
     );
 

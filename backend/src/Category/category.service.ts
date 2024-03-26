@@ -3,15 +3,15 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
+import { CreateCategorydto } from './dto/create-category.dto';
 import { PrismaService } from '../tools/prisma/prisma.service';
 
 @Injectable()
 export class CategoryService {
   constructor(private prisma: PrismaService) {}
 
-  async createCategory(createCategoryDto: CreateCategoryDto) {
-    const { name, parentId } = createCategoryDto;
+  async createCategory(createCategorydto: CreateCategorydto) {
+    const { name, parentId } = createCategorydto;
 
     const existingCategory = await this.prisma.category.findUnique({
       where: { name },
@@ -87,11 +87,11 @@ export class CategoryService {
     return category;
   }
 
-  async update(id: number, updateCategoryDto: CreateCategoryDto) {
+  async update(id: number, updateCategorydto: CreateCategorydto) {
     try {
       return await this.prisma.category.update({
         where: { id },
-        data: updateCategoryDto,
+        data: updateCategorydto,
       });
     } catch (error) {
       throw new ConflictException(

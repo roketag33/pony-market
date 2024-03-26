@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
-import { CreateProductDto } from './dto/create-product.dto';
+import { CreateProductdto } from './dto/create-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -43,11 +43,11 @@ export class ProductController {
   )
   async create(
     @Req() req,
-    @Body() createProductDto: CreateProductDto,
+    @Body() createProductdto: CreateProductdto,
     @UploadedFiles() images: Array<Express.Multer.File>,
   ) {
     const userId = req.user.userId;
-    return this.productService.create(userId, createProductDto, images);
+    return this.productService.create(userId, createProductdto, images);
   }
 
   @Get()
@@ -63,10 +63,10 @@ export class ProductController {
   @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() updateProductDto: CreateProductDto,
+    @Body() updateProductdto: CreateProductdto,
     @Request() req: any,
   ) {
-    return this.productService.update(req.user.userId, +id, updateProductDto);
+    return this.productService.update(req.user.userId, +id, updateProductdto);
   }
 
   @Delete(':id')

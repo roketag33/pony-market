@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
+import { CreateCategorydto } from './dto/create-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Role } from 'src/user/enums/user.enums';
@@ -24,8 +24,8 @@ export class CategoryController {
   @Roles(Role.ADMIN)
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoryService.createCategory(createCategoryDto);
+  create(@Body() createCategorydto: CreateCategorydto) {
+    return this.categoryService.createCategory(createCategorydto);
   }
   @Get()
   findAll(@Query() query) {
@@ -42,9 +42,9 @@ export class CategoryController {
   @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
-    @Body() updateCategoryDto: CreateCategoryDto,
+    @Body() updateCategorydto: CreateCategorydto,
   ) {
-    return this.categoryService.update(+id, updateCategoryDto);
+    return this.categoryService.update(+id, updateCategorydto);
   }
 
   @Roles(Role.ADMIN)

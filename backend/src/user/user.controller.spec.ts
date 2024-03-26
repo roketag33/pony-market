@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../tools/prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserdto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { Role, Status } from './enums/user.enums';
@@ -46,22 +46,22 @@ describe('UserService', () => {
 
   describe('create', () => {
     it('should create a new user with hashed password', async () => {
-      const createUserDto: CreateUserDto = {
+      const createUserdto: CreateUserdto = {
         email: 'test@example.com',
         password: 'testPassword',
         role: Role.USER,
         status: Status.ACTIVE,
       };
-      const result = await service.create(createUserDto);
+      const result = await service.create(createUserdto);
 
       expect(prismaServiceMock.user.create).toHaveBeenCalledWith({
         data: {
-          ...createUserDto,
+          ...createUserdto,
           password: 'hashedPassword',
           role: 'USER',
         },
       });
-      expect(result).toEqual(expect.objectContaining(createUserDto));
+      expect(result).toEqual(expect.objectContaining(createUserdto));
     });
   });
 });

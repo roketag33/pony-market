@@ -5,15 +5,16 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { Role, Status } from '../enums/user.enums';
+import { Status } from '../enums/user.enums';
+import { Role } from '@prisma/client'; // Importez Role depuis le client Prisma
 
-export class CreateUserDto {
+export class CreateUserdto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
 
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
   password: string;
 
   @IsOptional()

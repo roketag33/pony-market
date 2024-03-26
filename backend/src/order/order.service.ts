@@ -4,13 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderdto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrderService {
   constructor(private prisma: PrismaService) {}
 
-  async createOrder(dto: CreateOrderDto) {
+  async createOrder(dto: CreateOrderdto) {
     const buyer = await this.prisma.user.findUnique({
       where: { id: dto.buyerId },
     });

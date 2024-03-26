@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsNumber, IsArray, IsString } from 'class-validator';
 import { OrderStatus } from '../enums/order-status.enum';
 
-export class CreateOrderDto {
+export class CreateOrderdto {
   @IsNumber()
   @IsNotEmpty()
   buyerId: number;

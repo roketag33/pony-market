@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useUserStore } from '../../store/useUserStore';
 import { useNavigate } from 'react-router-dom';
+import { LoginResponse } from '../../Types/schemas/Responses/Login.responses';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const saveToken = useUserStore((state) => state.saveToken);
   const navigate = useNavigate();
-  const BACK_URL = import.meta.env.VITE_BACK_URL || process.env.REACT_APP_BACK_URL; 
+  const BACK_URL = import.meta.env.VITE_BACK_URL || process.env.REACT_APP_BACK_URL;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,7 +19,7 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${BACK_URL}/auth/login`, { // Utilisez votre chemin d'API spécifique
+      const response = await fetch(`${BACK_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -28,8 +29,8 @@ const LoginPage: React.FC = () => {
         throw new Error('Login failed');
       }
 
-      const { token } = await response.json();
-      saveToken(token);
+      const { access_token } = await response.json() as LoginResponse;
+      saveToken(access_token);
       navigate('/dashboard');
     } catch (error) {
       if (error instanceof Error) {

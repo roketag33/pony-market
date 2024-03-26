@@ -4,6 +4,7 @@ interface UserState {
   token: string | null
   saveToken: (token: string) => void
   clearToken: () => void
+  getToken: () => string | null
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -12,6 +13,11 @@ export const useUserStore = create<UserState>((set) => ({
     localStorage.setItem('token', token)
     set({ token })
   },
+
+getToken: () => {
+    return localStorage.getItem('token')
+  },
+
   clearToken: () => {
     localStorage.removeItem('token')
     set({ token: null })

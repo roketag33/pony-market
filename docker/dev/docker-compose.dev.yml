@@ -3,22 +3,22 @@ name: pony-market-dev
 services:
 
 
-  nestjs_app_dev:
-    container_name: nestjs_app_dev
-    restart: always
-    build:
-      context: ../../../pony market/backend/
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ../../../backend:/home/src/app
-      - /home/src/app/node_modules
-    environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-    depends_on:
-      - db_dev
+  # nestjs_app_dev:
+  #   container_name: nestjs_app_dev
+  #   restart: always
+  #   build:
+  #     context: ../../../pony market/backend/
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ../../../backend:/home/src/app
+  #     - /home/src/app/node_modules
+  #   environment:
+  #     - NODE_ENV=development
+  #     - CHOKIDAR_USEPOLLING=true
+  #   depends_on:
+  #     - db_dev
 
   db_dev:
     container_name: database

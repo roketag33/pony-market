@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
-import { CreateProductDto } from './dto/create-product.dto';
+import { CreateProductdto } from './dto/create-product.dto';
 import { Role } from '../user/enums/user.enums';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class ProductService {
 
   async create(
     userId: number,
-    createProductDto: CreateProductDto,
+    createProductdto: CreateProductdto,
     imageFiles: Express.Multer.File[],
   ) {
     if (!imageFiles || imageFiles.length === 0) {
@@ -30,7 +30,7 @@ export class ProductService {
     try {
       return await this.prisma.product.create({
         data: {
-          ...createProductDto,
+          ...createProductdto,
           userId,
           images: imagePaths,
         },
@@ -64,7 +64,7 @@ export class ProductService {
     };
   }
 
-  async update(userId: number, id: number, updateProductDto: CreateProductDto) {
+  async update(userId: number, id: number, updateProductdto: CreateProductdto) {
     const product = await this.prisma.product.findUnique({ where: { id } });
 
     if (!product) {
@@ -79,7 +79,7 @@ export class ProductService {
 
     return this.prisma.product.update({
       where: { id },
-      data: updateProductDto,
+      data: updateProductdto,
     });
   }
 

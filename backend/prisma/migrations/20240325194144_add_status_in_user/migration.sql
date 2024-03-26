@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "Status" ADD VALUE 'DELETED';
+
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "status" SET DEFAULT 'ACTIVE';
