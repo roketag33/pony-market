@@ -1,5 +1,4 @@
-// src/user/dto/user-response.dto.ts
-import { Role } from '@prisma/client'; // Importez Role depuis le client Prisma
+import { Role } from '@prisma/client';
 import {
   IsEmail,
   IsEnum,

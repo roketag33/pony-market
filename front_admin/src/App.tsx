@@ -1,4 +1,3 @@
-// src/App.tsx
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/login/LoginPage'
@@ -19,7 +18,6 @@ const App: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        {/* Définissez d'autres routes protégées de la même manière */}
       </Routes>
     </Router>
   );

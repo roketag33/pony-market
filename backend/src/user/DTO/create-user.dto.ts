@@ -6,7 +6,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Status } from '../enums/user.enums';
-import { Role } from '@prisma/client'; // Importez Role depuis le client Prisma
+import { Role } from '@prisma/client';
 
 export class CreateUserdto {
   @IsNotEmpty()

@@ -1,89 +1,56 @@
 import React, { useEffect, useState } from 'react';
-import { User } from '../../Types/User';
-import { useUserStore } from '../../store/useUserStore';
+import { User } from '../../Types/Type';
+import { ProductsResponseSchema } from '../../Types/schemas/Responses/product.response';
+import { Product } from '../../Types/Type';
+import fetchWithAuth   from '../../utils/api';
+import { UsersResponseSchema } from '../../Types/schemas/Responses/UserResponseSchema';
 
 const DashboardPage: React.FC = () => {
-  const [totalProducts, setTotalProducts] = useState<number>(0);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [products, setProducts] = useState<Product[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const BACK_URL = import.meta.env.VITE_BACK_URL || process.env.REACT_APP_BACK_URL;
+  const BACK_URL = import.meta.env.VITE_BACK_URL || 'http://localhost:3000';
 
-  const getToken = useUserStore((state) => state.getToken);
-
-  const fetchTotalProducts = async () => {
-    const token = getToken();
+  const fetchProducts = async () => {
     try {
-      const response = await fetch(`${BACK_URL}/products`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Réponse réseau pour les produits non OK');
-      }
-      const productsData = await response.json();
-      // Assurez-vous que votre API renvoie le nombre total ou une liste dont vous pouvez compter les éléments
-      setTotalProducts(productsData.length);
+      const response = await fetchWithAuth(`${BACK_URL}/products`);
+      if (!response.ok) throw new Error('Réponse réseau pour les produits non OK');
+      const rawData = await response.json();
+      const validatedData = ProductsResponseSchema.parse(rawData);
+      setProducts(validatedData.map(product => ({
+        ...product,
+      })));
     } catch (error) {
-      console.error('Erreur lors de la récupération des produits:', error);
-    }
-  };
-
-  const fetchTotalUsers = async () => {
-    const token = getToken();
-    try {
-      const response = await fetch(`${BACK_URL}/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Réponse réseau pour les utilisateurs non OK');
-      }
-      const usersData = await response.json();
-      // Ici aussi, assurez-vous que votre API renvoie un format compatible
-      setTotalUsers(usersData.length);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des utilisateurs:', error);
+      console.error('Erreur lors de la récupération ou de la validation des produits:', error);
     }
   };
 
   const fetchUsers = async () => {
-    const token = getToken();
     try {
-      const response = await fetch(`${BACK_URL}/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Réponse réseau pour la liste des utilisateurs non OK');
-      }
-      const data = await response.json();
-      
-      // Vérifiez si la réponse contient une propriété 'users' qui est un tableau
-      if (data && Array.isArray(data.users)) {
-        setUsers(data.users);
-        setTotalUsers(data.total); // Mettez également à jour le total des utilisateurs si nécessaire
-      } else {
-        console.error('La réponse n\'est pas structurée comme prévu:', data);
-      }
+      const response = await fetchWithAuth(`${BACK_URL}/users`);
+      if (!response.ok) throw new Error('Réponse réseau pour les utilisateurs non OK');
+      const rawData = await response.json();
+      const validatedData = UsersResponseSchema.parse(rawData);
+      setUsers(validatedData.users.map(user => ({
+        ...user,
+        createdAt: new Date(user.createdAt),
+        updatedAt: new Date(user.updatedAt)
+      })));
     } catch (error) {
       console.error('Erreur lors de la récupération des utilisateurs:', error);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchTotalProducts();
-    fetchTotalUsers();
+    fetchProducts();
     fetchUsers();
   }, []);
+
 
   return (
     <div className="container mx-auto px-4">
       <h1 className="text-3xl font-bold underline">Bienvenue sur le tableau de bord</h1>
-      <div>Nombre total de produits : {totalProducts}</div>
-      <div>Nombre total d'utilisateurs : {totalUsers}</div>
+      {/* <div>Nombre total de produits : {products}</div>
+      <div>Nombre total d'utilisateurs : {totalUsers}</div> */}
       <h2 className="text-2xl font-semibold mt-4 mb-2">Liste des Utilisateurs</h2>
       <table className="table-auto w-full">
   <thead>
@@ -96,7 +63,8 @@ const DashboardPage: React.FC = () => {
       <th className="px-4 py-2">Téléphone</th>
       <th className="px-4 py-2">Ville</th>
       <th className="px-4 py-2">Pays</th>
-      {/* Ajoutez d'autres en-têtes de colonnes ici si nécessaire */}
+      <th className="px-4 py-2">Créé le</th>
+      <th className="px-4 py-2">Mis à jour le</th>
     </tr>
   </thead>
   <tbody>
@@ -110,7 +78,32 @@ const DashboardPage: React.FC = () => {
         <td className="border px-4 py-2">{user.phoneNumber}</td>
         <td className="border px-4 py-2">{user.city}</td>
         <td className="border px-4 py-2">{user.country}</td>
-        {/* Affichez les champs supplémentaires ici */}
+        <td className="border px-4 py-2">{user.createdAt ? new Date(user.createdAt).toLocaleDateString("fr-FR") : "Non défini"}</td>
+        <td className="border px-4 py-2">{user.updatedAt ? new Date(user.updatedAt).toLocaleDateString("fr-FR") : "Non défini"}</td>
+
+
+      </tr>
+    ))}
+  </tbody>
+</table>
+<table className="table-auto w-full">
+  <thead>
+    <tr>
+      <th className="px-4 py-2">Nom</th>
+      <th className="px-4 py-2">Prix</th>
+      <th className="px-4 py-2">Description</th>
+      <th className="px-4 py-2">Créé le</th>
+      <th className="px-4 py-2">Mis à jour le</th>
+    </tr>
+  </thead>
+  <tbody>
+    {products.map((product, index) => (
+      <tr key={index}>
+        <td className="border px-4 py-2">{product.name}</td>
+        <td className="border px-4 py-2">{product.price}</td>
+        <td className="border px-4 py-2">{product.description}</td>
+        <td className="border px-4 py-2">{product.createdAt ? new Date(product.createdAt).toLocaleDateString("fr-FR") : "Non défini"}</td>
+        <td className="border px-4 py-2">{product.updatedAt ? new Date(product.updatedAt).toLocaleDateString("fr-FR") : "Non défini"}</td>
       </tr>
     ))}
   </tbody>

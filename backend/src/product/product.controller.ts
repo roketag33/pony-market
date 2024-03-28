@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
-import { CreateProductdto } from './dto/create-product.dto';
+import { CreateProductdto } from './dto/requests/create-product-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { diskStorage } from 'multer';
 import { extname } from 'path';

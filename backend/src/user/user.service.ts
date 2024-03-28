@@ -99,7 +99,6 @@ export class UserService {
         phoneNumber: true,
         city: true,
         country: true,
-        // Incluez d'autres champs selon le besoin
       },
     });
     const responseUsers = users.map((user) => ({
@@ -113,11 +112,10 @@ export class UserService {
       bio: user.bio,
       dateOfBirth: user.dateOfBirth
         ? user.dateOfBirth.toISOString().split('T')[0]
-        : null, // Formattez la date si nécessaire
+        : null,
       phoneNumber: user.phoneNumber,
       city: user.city,
       country: user.country,
-      // Ajoutez les champs supplémentaires ici
     }));
     return {
       users: responseUsers,
@@ -137,7 +135,7 @@ export class UserService {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role, // Pas de conversion nécessaire si les énumérations sont alignées
+      role: user.role,
     };
   }
   async update(id: number, updateUserdto: CreateUserdto) {
@@ -208,7 +206,7 @@ export class UserService {
     }
 
     const resetToken = uuidv4();
-    const resetTokenExpiry = addHours(new Date(), 1); // Le token expire dans 1 heure
+    const resetTokenExpiry = addHours(new Date(), 1);
 
     await this.prisma.user.update({
       where: { email },
@@ -223,7 +221,6 @@ export class UserService {
     );
   }
 
-  // Méthode pour réinitialiser le mot de passe
   async resetPassword(resetToken: string, newPassword: string) {
     const user = await this.prisma.user.findFirst({
       where: {

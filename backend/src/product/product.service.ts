@@ -6,8 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
-import { CreateProductdto } from './dto/create-product.dto';
+import { CreateProductdto } from './dto/requests/create-product-request.dto';
 import { Role } from '../user/enums/user.enums';
+import { ProductResponseDto } from './dto/responses/product-response.dto';
 
 @Injectable()
 export class ProductService {
@@ -41,15 +42,18 @@ export class ProductService {
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<ProductResponseDto[]> {
     const products = await this.prisma.product.findMany();
+    console.log(products);
     return products.map((product) => ({
       ...product,
-      images: product.images.map((image) => `${this.baseUrl}/uploads/${image}`),
+      images: product.images.map(
+        (image) => `${process.env.BASE_URL}/uploads/${image}`,
+      ),
     }));
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<ProductResponseDto> {
     const product = await this.prisma.product.findUnique({
       where: { id },
     });
@@ -60,7 +64,9 @@ export class ProductService {
 
     return {
       ...product,
-      images: product.images.map((image) => `${this.baseUrl}/uploads/${image}`),
+      images: product.images.map(
+        (image) => `${process.env.BASE_URL}/uploads/${image}`,
+      ),
     };
   }
 

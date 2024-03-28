@@ -10,10 +10,10 @@ async function bootstrap() {
     snapshot: true,
   });
   app.enableCors({
-    origin: process.env.FRONT_ADMIN_URL, // Remplacez par l'origine de votre application front-end
+    origin: process.env.FRONT_ADMIN_URL,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: ['Content-Type, Accept', 'Authorization'], // Ajoutez ceci
-    credentials: true, //
+    allowedHeaders: ['Content-Type, Accept', 'Authorization'],
+    credentials: true,
   });
 
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
