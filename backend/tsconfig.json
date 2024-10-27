@@ -25,5 +25,8 @@
     "fallbackPolling": "dynamicPriority",
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["node_modules", "dist"]
+  },
+  "paths": {
+    "@sentry/*": ["./node_modules/@sentry/*"]
   }
 }

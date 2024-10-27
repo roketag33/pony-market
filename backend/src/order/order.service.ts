@@ -4,53 +4,130 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../tools/prisma/prisma.service';
-import { CreateOrderdto } from './dto/create-order.dto';
+import { PaymentService } from '../payment/payment.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { OrderStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentService: PaymentService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
-  async createOrder(dto: CreateOrderdto) {
-    const buyer = await this.prisma.user.findUnique({
-      where: { id: dto.buyerId },
-    });
-    const seller = await this.prisma.user.findUnique({
-      where: { id: dto.sellerId },
-    });
+  async createOrder(dto: CreateOrderDto) {
+    try {
+      return await this.prisma.$transaction(async (prisma) => {
+        // Vérifications parallèles
+        const [buyer, seller, products] = await Promise.all([
+          prisma.user.findUnique({
+            where: { id: dto.buyerId },
+            select: { id: true, status: true },
+          }),
+          prisma.user.findUnique({
+            where: { id: dto.sellerId },
+            select: { id: true, status: true },
+          }),
+          prisma.product.findMany({
+            where: {
+              id: { in: dto.productIds },
+              isAvailable: true,
+              userId: dto.sellerId, // Vérifier que les produits appartiennent au vendeur
+            },
+          }),
+        ]);
 
-    if (!buyer || !seller) {
-      throw new BadRequestException('Acheteur ou vendeur introuvable.');
+        // Validations
+        if (!buyer || !seller) {
+          throw new BadRequestException('Acheteur ou vendeur introuvable');
+        }
+        if (products.length !== dto.productIds.length) {
+          throw new BadRequestException('Certains produits sont indisponibles');
+        }
+
+        // Calcul du prix total pour vérification
+        const calculatedTotal = products.reduce(
+          (sum, product) => sum + product.price,
+          0,
+        );
+        if (Math.abs(calculatedTotal - dto.totalPrice) > 0.01) {
+          // Tolérance pour les erreurs d'arrondi
+          throw new BadRequestException(
+            'Le prix total ne correspond pas aux produits',
+          );
+        }
+
+        // Création de la commande
+        const order = await prisma.order.create({
+          data: {
+            buyerId: dto.buyerId,
+            sellerId: dto.sellerId,
+            totalPrice: dto.totalPrice,
+            status: OrderStatus.PENDING,
+            shippingAddressId: dto.shippingAddressId,
+            billingAddressId: dto.billingAddressId,
+            shippingCost: dto.shippingCost || 0,
+            products: {
+              connect: products.map((p) => ({ id: p.id })),
+            },
+          },
+          include: {
+            products: true,
+            buyer: true,
+            seller: true,
+          },
+        });
+
+        // Initier le paiement
+        const payment = await this.paymentService.initiatePayment({
+          orderId: order.id,
+          amount: order.totalPrice + order.shippingCost,
+          currency: 'EUR',
+          customerId: order.buyerId,
+        });
+
+        // Émettre l'événement
+        this.eventEmitter.emit('order.created', { order, payment });
+
+        return { order, payment };
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new BadRequestException('Erreur de base de données');
+      }
+      throw error;
     }
-    const products = await this.prisma.product.findMany({
-      where: {
-        id: { in: dto.productIds },
-      },
-    });
-    if (products.length !== dto.productIds.length) {
-      throw new BadRequestException(
-        'Un ou plusieurs produits sont introuvables.',
-      );
-    }
-
-    return this.prisma.order.create({
-      data: {
-        buyerId: dto.buyerId,
-        sellerId: dto.sellerId,
-        totalPrice: dto.totalPrice,
-        status: dto.status,
-      },
-    });
   }
+
   async findOrderById(orderId: number) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { products: true },
+      include: {
+        products: true,
+        buyer: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        payments: true,
+      },
     });
 
     if (!order) {
-      throw new NotFoundException(
-        `Commande avec l'ID "${orderId}" non trouvée.`,
-      );
+      throw new NotFoundException(`Commande ${orderId} non trouvée`);
     }
 
     return order;
@@ -58,8 +135,22 @@ export class OrderService {
 
   async findAllOrdersByUserId(userId: number) {
     return this.prisma.order.findMany({
-      where: { buyerId: userId },
-      include: { products: true },
+      where: {
+        OR: [{ buyerId: userId }, { sellerId: userId }],
+      },
+      include: {
+        products: true,
+        payments: {
+          select: {
+            status: true,
+            amount: true,
+            provider: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 }

@@ -1,24 +1,32 @@
 import { IsNumber, IsString, IsDate } from 'class-validator';
+import { ProductCondition, ProductSize } from '@prisma/client';
 
 export class ProductResponseDto {
-  @IsNumber()
   id: number;
-
-  @IsString()
   name: string;
-
-  @IsString()
   description: string;
-
-  @IsNumber()
   price: number;
-
-  @IsString({ each: true })
+  brand?: string;
+  categoryId?: number;
+  condition: ProductCondition;
+  size?: ProductSize;
+  color?: string;
+  weight?: number;
   images: string[];
-
-  @IsDate()
+  isNegotiable: boolean;
+  isReserved: boolean;
+  isAvailable: boolean;
   createdAt: Date;
-
-  @IsDate()
   updatedAt: Date;
+  category?: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  user: {
+    id: number;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+  };
 }

@@ -11,13 +11,19 @@ import {
   UploadedFiles,
   Request,
   Req,
+  DefaultValuePipe,
+  ParseIntPipe,
+  Query,
+  ParseFloatPipe,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
-import { CreateProductdto } from './dto/requests/create-product-request.dto';
+import { CreateProductDto } from './dto/requests/create-product-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { UpdateProductDto } from './dto/requests/update-product.dto';
+import { ProductCondition } from '@prisma/client';
 
 @UseGuards(JwtAuthGuard)
 @Controller('products')
@@ -26,51 +32,108 @@ export class ProductController {
 
   @Post()
   @UseInterceptors(
-    FilesInterceptor('images', 20, {
+    FilesInterceptor('images', 10, {
       storage: diskStorage({
         destination: './uploads/products',
         filename: (req, file, callback) => {
-          const name = file.originalname.split('.')[0];
-          const fileExtName = extname(file.originalname);
-          const randomName = Array(4)
+          const randomName = Array(32)
             .fill(null)
             .map(() => Math.round(Math.random() * 16).toString(16))
             .join('');
-          callback(null, `${name}-${randomName}${fileExtName}`);
+          callback(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
+      fileFilter: (req, file, callback) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
     }),
   )
   async create(
-    @Req() req,
-    @Body() createProductdto: CreateProductdto,
+    @Request() req,
+    @Body() createProductDto: CreateProductDto,
     @UploadedFiles() images: Array<Express.Multer.File>,
   ) {
-    const userId = req.user.userId;
-    return this.productService.create(userId, createProductdto, images);
+    return this.productService.create(
+      req.user.userId,
+      createProductDto,
+      images,
+    );
   }
 
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+    @Query('category', ParseIntPipe) category?: number,
+    @Query('condition') condition?: ProductCondition,
+    @Query('minPrice', ParseFloatPipe) minPrice?: number,
+    @Query('maxPrice', ParseFloatPipe) maxPrice?: number,
+    @Query('search') search?: string,
+    @Query('userId', ParseIntPipe) userId?: number,
+  ) {
+    return this.productService.findAll({
+      page,
+      limit,
+      category,
+      condition,
+      minPrice,
+      maxPrice,
+      search,
+      userId,
+    });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.productService.findOne(id);
   }
 
   @Put(':id')
+  @UseInterceptors(
+    FilesInterceptor('images', 10, {
+      storage: diskStorage({
+        destination: './uploads/products',
+        filename: (req, file, callback) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          callback(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+    }),
+  )
   update(
-    @Param('id') id: string,
-    @Body() updateProductdto: CreateProductdto,
-    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateProductDto: UpdateProductDto,
+    @Request() req,
+    @UploadedFiles() images?: Array<Express.Multer.File>,
   ) {
-    return this.productService.update(req.user.userId, +id, updateProductdto);
+    return this.productService.update(
+      req.user.userId,
+      id,
+      updateProductDto,
+      images,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Request() req: any) {
-    return this.productService.remove(req.user.userId, +id);
+  remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.productService.remove(req.user.userId, id);
   }
 }

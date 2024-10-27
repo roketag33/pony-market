@@ -107,8 +107,8 @@ export class UserService {
         ? user.dateOfBirth.toISOString().split('T')[0]
         : null,
       phoneNumber: user.phoneNumber,
-      city: user.addresses[0]?.city || null,  // Modifié pour utiliser l'adresse
-      country: user.addresses[0]?.country || null,  // Modifié pour utiliser l'adresse
+      city: user.addresses[0]?.city || null, // Modifié pour utiliser l'adresse
+      country: user.addresses[0]?.country || null, // Modifié pour utiliser l'adresse
     }));
     return {
       users: responseUsers,

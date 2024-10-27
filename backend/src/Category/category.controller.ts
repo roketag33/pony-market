@@ -12,9 +12,9 @@ import {
 import { CategoryService } from './category.service';
 import { CreateCategorydto } from './dto/create-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Role } from 'src/user/enums/user.enums';
-import { Roles } from 'src/tools/common/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Role } from '../user/enums/user.enums';
+import { Roles } from '../tools/common/decorators/roles.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('categories')

@@ -11,6 +11,12 @@ RUN apk add --no-cache \
 
 # Copy yarn files first
 COPY package.json yarn.lock ./
+
+
+RUN yarn global add @nestjs/cli
+
+# Install project dependencies
+RUN yarn install --frozen-lockfile
 COPY prisma ./prisma/
 
 # Install dependencies with yarn

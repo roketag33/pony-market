@@ -42,6 +42,7 @@ services:
       - MAIL_FROM=noreply@yourapp.com
       - MAILGUN_API_KEY=${MAILGUN_API_KEY}
       - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+      - SENTRY_DSN=${SENTRY_DSN}
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=500
       - WATCHPACK_POLLING=true

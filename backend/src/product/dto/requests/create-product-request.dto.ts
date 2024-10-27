@@ -1,7 +1,7 @@
 import { IsString, IsNumber, IsOptional, IsEnum } from 'class-validator';
 import { ProductCondition, ProductSize } from '@prisma/client';
 
-export class CreateProductdto {
+export class CreateProductDto {
   @IsString()
   readonly name: string;
 

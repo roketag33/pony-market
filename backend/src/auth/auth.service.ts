@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { Logindto } from './dto/login.dto';
-import { PrismaService } from 'src/tools/prisma/prisma.service';
+import { PrismaService } from '../tools/prisma/prisma.service';
 import { randomBytes } from 'crypto';
 
 @Injectable()

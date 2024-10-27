@@ -5,6 +5,7 @@
     "deleteOutDir": true,
     "webpack": true,
     "tsConfigPath": "tsconfig.json",
+    "webpackConfigPath": "webpack.config.js",
     "assets": ["**/*.proto"],
     "watchAssets": true
   },
