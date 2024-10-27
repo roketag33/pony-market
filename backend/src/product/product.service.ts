@@ -34,6 +34,7 @@ export class ProductService {
           ...createProductdto,
           userId,
           images: imagePaths,
+          condition: 'GOOD', // Valeur par défaut
         },
       });
     } catch (error) {

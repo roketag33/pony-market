@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum } from 'class-validator';
+import { ProductCondition, ProductSize } from '@prisma/client';
 
 export class CreateProductdto {
   @IsString()
@@ -17,4 +18,16 @@ export class CreateProductdto {
   @IsNumber()
   @IsOptional()
   readonly categoryId?: number;
+
+  @IsEnum(ProductCondition)
+  @IsOptional()
+  readonly condition?: ProductCondition = ProductCondition.GOOD;
+
+  @IsEnum(ProductSize)
+  @IsOptional()
+  readonly size?: ProductSize;
+
+  @IsString()
+  @IsOptional()
+  readonly color?: string;
 }

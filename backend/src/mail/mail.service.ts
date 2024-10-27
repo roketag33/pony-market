@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as formData from 'form-data';
 import Mailgun from 'mailgun.js';
+import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
 import * as path from 'path';
 import handlebars from 'handlebars';
@@ -8,18 +9,29 @@ import handlebars from 'handlebars';
 @Injectable()
 export class MailService {
   private mg;
+  private transporter;
 
   constructor() {
-    const mailgun = new Mailgun(formData);
-    this.mg = mailgun.client({
-      username: 'api',
-      key: process.env.MAILGUN_API_KEY,
-    });
+    if (process.env.NODE_ENV === 'development') {
+      // Configuration pour MailHog en développement
+      this.transporter = nodemailer.createTransport({
+        host: 'mailhog', // nom du container docker
+        port: 1025,
+        ignoreTLS: true,
+      });
+    } else {
+      // Configuration Mailgun pour la production
+      const mailgun = new Mailgun(formData);
+      this.mg = mailgun.client({
+        username: 'api',
+        key: process.env.MAILGUN_API_KEY,
+      });
+    }
   }
 
   async sendEmail(to: string, subject: string, text: string, html: string) {
     const messageData = {
-      from: process.env.MAIL_FROM,
+      from: process.env.MAIL_FROM || 'noreply@localhost',
       to: [to],
       subject: subject,
       text: text,
@@ -27,15 +39,24 @@ export class MailService {
     };
 
     try {
-      const msg = await this.mg.messages.create(
-        process.env.MAILGUN_DOMAIN,
-        messageData,
-      );
-      console.log(msg);
+      if (process.env.NODE_ENV === 'development') {
+        // Utiliser MailHog en développement
+        const info = await this.transporter.sendMail(messageData);
+        console.log('Email envoyé via MailHog:', info);
+      } else {
+        // Utiliser Mailgun en production
+        const msg = await this.mg.messages.create(
+          process.env.MAILGUN_DOMAIN,
+          messageData,
+        );
+        console.log('Email envoyé via Mailgun:', msg);
+      }
     } catch (err) {
       console.error("Erreur lors de l'envoi de l'email:", err);
+      throw err;
     }
   }
+
   async sendPasswordResetEmail(to: string, name: string, resetLink: string) {
     const templateSource = fs.readFileSync(
       path.join(

@@ -21,21 +21,16 @@ export class CategoryService {
       throw new ConflictException('Une catégorie avec ce nom existe déjà.');
     }
 
-    if (parentId !== undefined) {
-      const parentCategory = await this.prisma.category.findUnique({
-        where: { id: parentId },
-      });
-
-      if (!parentCategory) {
-        throw new NotFoundException(
-          `Catégorie parente avec l'ID "${parentId}" non trouvée.`,
-        );
-      }
-    }
+    // Génération du slug
+    const slug = name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
 
     return this.prisma.category.create({
       data: {
         name,
+        slug, // Ajout du slug
         parentId: parentId || null,
       },
     });

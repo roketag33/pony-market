@@ -1,11 +1,19 @@
 {
-  "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "./src",
+  "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": ["**/mail/templates/*.handlebars"],
+    "webpack": true,
+    "tsConfigPath": "tsconfig.json",
+    "assets": ["**/*.proto"],
     "watchAssets": true
-
+  },
+  "watchOptions": {
+    "watchFile": "priorityPolling",
+    "watchDirectory": "priorityPolling",
+    "usePolling": true,
+    "interval": 500,
+    "followSymlinks": true,
+    "ignored": ["node_modules", "dist"]
   }
 }

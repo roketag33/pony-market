@@ -86,21 +86,14 @@ export class UserService {
 
   async findAll(): Promise<ListUsersResponsedto> {
     const users = await this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        status: true,
-        avatarUrl: true,
-        bio: true,
-        dateOfBirth: true,
-        phoneNumber: true,
-        city: true,
-        country: true,
+      include: {
+        addresses: {
+          where: { isDefault: true },
+          take: 1,
+        },
       },
     });
+
     const responseUsers = users.map((user) => ({
       id: user.id,
       email: user.email,
@@ -114,8 +107,8 @@ export class UserService {
         ? user.dateOfBirth.toISOString().split('T')[0]
         : null,
       phoneNumber: user.phoneNumber,
-      city: user.city,
-      country: user.country,
+      city: user.addresses[0]?.city || null,  // Modifié pour utiliser l'adresse
+      country: user.addresses[0]?.country || null,  // Modifié pour utiliser l'adresse
     }));
     return {
       users: responseUsers,

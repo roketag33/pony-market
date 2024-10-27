@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Définition des Enums pour les rôles et les statuts
+// Enums
 enum Role {
   USER
   ADMIN
@@ -34,47 +28,130 @@ enum OrderStatus {
   CANCELLED
 }
 
-// Modèle User complet
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ProductSize {
+  XXS
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  OTHER
+}
+
+enum DisputeStatus {
+  OPENED
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum DisputeReason {
+  ITEM_NOT_RECEIVED
+  ITEM_NOT_AS_DESCRIBED
+  DAMAGED_ITEM
+  WRONG_ITEM
+  OTHER
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+  APPLE_PAY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Modèles
 model User {
-  id                       Int                      @id @default(autoincrement())
-  email                    String                   @unique
-  password                 String
-  firstName                String?
-  lastName                 String?
-  role                     Role                     @default(USER)
-  refreshToken             String?                  @unique
-  refreshTokenExpiry       DateTime?
-  emailVerified            Boolean                  @default(false)
-  emailVerificationToken   String?
-  resetToken               String?                  @unique
-  resetTokenExpiry         DateTime?
-  createdAt                DateTime                 @default(now())
-  updatedAt                DateTime                 @updatedAt
-  status   Status    @default(ACTIVE) // Utilisez l'enum Status avec une valeur par défaut à ACTIVE
-  avatarUrl                String?
-  bio                      String?
-  dateOfBirth              DateTime?
-  phoneNumber              String?                  @unique
-  address                  String?
-  city                     String?
-  country                  String?
-  zipCode                  String?
-  products                 Product[]
-  articles                 Post[]
-  buyerOrders              Order[]                  @relation("BuyerOrders")
-  sellerOrders             Order[]                  @relation("SellerOrders")
-  buyerTransactions        Transaction[]            @relation("BuyerTransactions")
-  sellerTransactions       Transaction[]            @relation("SellerTransactions")
-  reviews                  Review[]
-  wishlist                 Wishlist[]
-  feedbacks                UserFeedback[]
-  categorySubscriptions    CategorySubscription[]
-  favoriteSellersAsUser    FavoriteSeller[]         @relation("UserFavorites")
-  favoriteSellersAsSeller  FavoriteSeller[]         @relation("SellerFavorites")
-  sentMessages             Message[]                @relation("messageSender")
-  receivedMessages         Message[]                @relation("messageReceiver")
-  communicationPreference  CommunicationPreference?
-  emailLogs                EmailLog[]
+  id                     Int       @id @default(autoincrement())
+  email                  String    @unique
+  password               String
+  firstName              String?
+  lastName               String?
+  role                   Role      @default(USER)
+  refreshToken           String?   @unique
+  refreshTokenExpiry     DateTime?
+  emailVerified          Boolean   @default(false)
+  emailVerificationToken String?
+  resetToken             String?   @unique
+  resetTokenExpiry       DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  status                 Status    @default(ACTIVE)
+  avatarUrl              String?
+  bio                    String?
+  dateOfBirth            DateTime?
+  phoneNumber            String?   @unique
+  referralCode           String?   @unique
+  addresses              Address[]
+  defaultAddress         Address?  @relation("DefaultAddress", fields: [defaultAddressId], references: [id])
+  defaultAddressId       Int?      @unique
+
+  // Adresses
+
+  // Relations produits et articles
+  products Product[]
+  articles Post[]
+
+  // Relations commandes et transactions
+  buyerOrders        Order[]       @relation("BuyerOrders")
+  sellerOrders       Order[]       @relation("SellerOrders")
+  buyerTransactions  Transaction[] @relation("BuyerTransactions")
+  sellerTransactions Transaction[] @relation("SellerTransactions")
+
+  // Avis et favoris
+  reviews   Review[]
+  wishlist  Wishlist[]
+  feedbacks UserFeedback[]
+
+  // Abonnements et favoris
+  categorySubscriptions   CategorySubscription[]
+  favoriteSellersAsUser   FavoriteSeller[]       @relation("UserFavorites")
+  favoriteSellersAsSeller FavoriteSeller[]       @relation("SellerFavorites")
+
+  // Messagerie
+  sentMessages     Message[] @relation("messageSender")
+  receivedMessages Message[] @relation("messageReceiver")
+
+  // Préférences et logs
+  communicationPreference CommunicationPreference?
+  emailLogs               EmailLog[]
+
+  // Litiges
+  disputesAsBuyer  Dispute[] @relation("BuyerDisputes")
+  disputesAsSeller Dispute[] @relation("SellerDisputes")
+
+  // Parrainage
+  referrals  Referral[] @relation("UserReferrals")
+  referredBy Referral[] @relation("ReferredUsers")
+}
+
+model Address {
+  id             Int     @id @default(autoincrement())
+  userId         Int
+  street         String
+  city           String
+  country        String
+  zipCode        String
+  isDefault      Boolean @default(false)
+  user           User    @relation(fields: [userId], references: [id])
+  userAsDefault  User?   @relation("DefaultAddress") // Relation inverse
+  shippingOrders Order[] @relation("ShippingAddress")
+  billingOrders  Order[] @relation("BillingAddress")
 }
 
 model Post {
@@ -88,28 +165,43 @@ model Post {
 }
 
 model Product {
-  id          Int        @id @default(autoincrement())
-  userId      Int
-  user        User       @relation(fields: [userId], references: [id])
-  name        String
-  description String
-  price       Float
-  brand       String?
-  categoryId  Int?
-  images      String[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  reviews     Review[]
-  wishlist    Wishlist[]
-  category    Category?  @relation(fields: [categoryId], references: [id])
-  orders      Order[]    @relation("OrderProducts")
-  events      Event[]
+  id           Int              @id @default(autoincrement())
+  userId       Int
+  name         String
+  description  String
+  price        Float
+  brand        String?
+  categoryId   Int?
+  images       String[]
+  condition    ProductCondition @default(GOOD)
+  size         ProductSize?
+  color        String?
+  weight       Float?
+  isNegotiable Boolean          @default(false)
+  isReserved   Boolean          @default(false)
+  isAvailable  Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // Relations
+  user     User       @relation(fields: [userId], references: [id])
+  category Category?  @relation(fields: [categoryId], references: [id])
+  reviews  Review[]
+  wishlist Wishlist[]
+  orders   Order[]    @relation("OrderProducts")
+  events   Event[]
+  disputes Dispute[]
 }
 
 model Category {
-  id                    Int                    @id @default(autoincrement())
-  name                  String                 @unique
-  parentId              Int?                   @map("parent_id")
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  slug        String  @unique @default("")
+  description String?
+  icon        String?
+  parentId    Int?    @map("parent_id")
+
+  // Relations
   parent                Category?              @relation("ParentChild", fields: [parentId], references: [id])
   children              Category[]             @relation("ParentChild")
   products              Product[]
@@ -117,24 +209,33 @@ model Category {
 }
 
 model Order {
-  id           Int           @id @default(autoincrement())
-  buyerId      Int
-  sellerId     Int
-  products     Product[]     @relation("OrderProducts")
-  totalPrice   Float
-  status       OrderStatus
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  buyer        User          @relation("BuyerOrders", fields: [buyerId], references: [id])
-  seller       User          @relation("SellerOrders", fields: [sellerId], references: [id])
-  transactions Transaction[]
+  id                Int         @id @default(autoincrement())
+  buyerId           Int
+  sellerId          Int
+  totalPrice        Float
+  status            OrderStatus
+  shippingCost      Float       @default(0)
+  shippingAddressId Int? // Nouveau champ
+  billingAddressId  Int? // Nouveau champ
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  products        Product[]     @relation("OrderProducts")
+  buyer           User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller          User          @relation("SellerOrders", fields: [sellerId], references: [id])
+  transactions    Transaction[]
+  disputes        Dispute[]
+  payments        Payment[]
+  shippingAddress Address?      @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  billingAddress  Address?      @relation("BillingAddress", fields: [billingAddressId], references: [id])
 }
 
 model Review {
   id        Int      @id @default(autoincrement())
   productId Int
   userId    Int
-  rating    Int // Par exemple, de 1 à 5
+  rating    Int // 1 à 5
   comment   String?
   createdAt DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id])
@@ -144,7 +245,7 @@ model Review {
 model Wishlist {
   id        Int       @id @default(autoincrement())
   userId    Int
-  products  Product[] // Relation many-to-many implicite correctement définie
+  products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   user      User      @relation(fields: [userId], references: [id])
@@ -153,13 +254,30 @@ model Wishlist {
 model Transaction {
   id        Int      @id @default(autoincrement())
   orderId   Int
-  order     Order    @relation(fields: [orderId], references: [id])
   amount    Float
   createdAt DateTime @default(now())
   buyerId   Int
   sellerId  Int
-  buyer     User     @relation("BuyerTransactions", fields: [buyerId], references: [id])
-  seller    User     @relation("SellerTransactions", fields: [sellerId], references: [id])
+
+  // Relations
+  order  Order @relation(fields: [orderId], references: [id])
+  buyer  User  @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  seller User  @relation("SellerTransactions", fields: [sellerId], references: [id])
+}
+
+model Payment {
+  id            Int             @id @default(autoincrement())
+  orderId       Int
+  amount        Float
+  currency      String          @default("EUR")
+  provider      PaymentProvider
+  status        PaymentStatus
+  transactionId String // ID de transaction du provider
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id])
 }
 
 model Event {
@@ -175,7 +293,7 @@ model UserFeedback {
   id        Int      @id @default(autoincrement())
   userId    Int
   content   String
-  rating    Int // Par exemple, de 1 à 5
+  rating    Int
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }
@@ -185,8 +303,10 @@ model CategorySubscription {
   userId     Int
   categoryId Int
   createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
-  category   Category @relation(fields: [categoryId], references: [id])
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
 }
 
 model FavoriteSeller {
@@ -194,8 +314,10 @@ model FavoriteSeller {
   userId    Int
   sellerId  Int
   createdAt DateTime @default(now())
-  user      User     @relation(name: "UserFavorites", fields: [userId], references: [id])
-  seller    User     @relation(name: "SellerFavorites", fields: [sellerId], references: [id])
+
+  // Relations
+  user   User @relation(name: "UserFavorites", fields: [userId], references: [id])
+  seller User @relation(name: "SellerFavorites", fields: [sellerId], references: [id])
 }
 
 model Message {
@@ -204,8 +326,10 @@ model Message {
   receiverId Int
   content    String
   createdAt  DateTime @default(now())
-  sender     User     @relation("messageSender", fields: [senderId], references: [id])
-  receiver   User     @relation("messageReceiver", fields: [receiverId], references: [id])
+
+  // Relations
+  sender   User @relation("messageSender", fields: [senderId], references: [id])
+  receiver User @relation("messageReceiver", fields: [receiverId], references: [id])
 }
 
 model CommunicationPreference {
@@ -223,4 +347,38 @@ model EmailLog {
   content String
   sentAt  DateTime @default(now())
   user    User?    @relation(fields: [userId], references: [id])
+}
+
+model Dispute {
+  id          Int           @id @default(autoincrement())
+  orderId     Int
+  productId   Int
+  buyerId     Int
+  sellerId    Int
+  reason      DisputeReason
+  description String
+  status      DisputeStatus @default(OPENED)
+  resolution  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  buyer   User    @relation("BuyerDisputes", fields: [buyerId], references: [id])
+  seller  User    @relation("SellerDisputes", fields: [sellerId], references: [id])
+}
+
+model Referral {
+  id            Int       @id @default(autoincrement())
+  referrerId    Int
+  referredId    Int
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  rewardClaimed Boolean   @default(false)
+
+  // Relations
+  referrer User @relation("UserReferrals", fields: [referrerId], references: [id])
+  referred User @relation("ReferredUsers", fields: [referredId], references: [id])
 }
