@@ -4,8 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
 import { PrismaService } from '../tools/prisma/prisma.service';
-import Stripe from 'stripe';
-
+import { Stripe } from 'stripe';
 @Module({
   imports: [ConfigModule],
   controllers: [PaymentController],

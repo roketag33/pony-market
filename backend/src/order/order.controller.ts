@@ -16,7 +16,7 @@ import {
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../Tools/common/decorators/auth/current-user.decorator';
+import { CurrentUser } from '../tools/common/decorators/auth/current-user.decorator';
 import { User } from '@prisma/client';
 
 @ApiTags('Orders')

@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
+// Enums pour les utilisateurs et rôles
 enum Role {
   USER
   ADMIN
@@ -21,11 +21,14 @@ enum Status {
   DELETED
 }
 
+// Enums pour les produits
 enum OrderStatus {
   PENDING
+  PAID
   SHIPPED
   DELIVERED
   CANCELLED
+  REFUNDED
 }
 
 enum ProductCondition {
@@ -47,6 +50,7 @@ enum ProductSize {
   OTHER
 }
 
+// Enums pour les litiges
 enum DisputeStatus {
   OPENED
   UNDER_REVIEW
@@ -62,6 +66,7 @@ enum DisputeReason {
   OTHER
 }
 
+// Enums pour les paiements
 enum PaymentProvider {
   STRIPE
   PAYPAL
@@ -75,7 +80,22 @@ enum PaymentStatus {
   REFUNDED
 }
 
-// Modèles
+// Nouveaux enums pour les transactions
+enum TransactionType {
+  PAYMENT
+  REFUND
+  COMMISSION
+  WITHDRAWAL
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Modèle User principal
 model User {
   id                     Int       @id @default(autoincrement())
   email                  String    @unique
@@ -97,21 +117,26 @@ model User {
   dateOfBirth            DateTime?
   phoneNumber            String?   @unique
   referralCode           String?   @unique
-  addresses              Address[]
-  defaultAddress         Address?  @relation("DefaultAddress", fields: [defaultAddressId], references: [id])
-  defaultAddressId       Int?      @unique
 
-  // Adresses
+  // Nouveaux champs pour Stripe
+  stripeCustomerId    String? @unique
+  stripeAccountId     String? @unique
+  stripeAccountStatus String? @default("PENDING")
+
+  // Relations avec Address
+  addresses        Address[]
+  defaultAddress   Address?  @relation("DefaultAddress", fields: [defaultAddressId], references: [id])
+  defaultAddressId Int?      @unique
 
   // Relations produits et articles
   products Product[]
   articles Post[]
 
   // Relations commandes et transactions
-  buyerOrders        Order[]       @relation("BuyerOrders")
-  sellerOrders       Order[]       @relation("SellerOrders")
-  buyerTransactions  Transaction[] @relation("BuyerTransactions")
-  sellerTransactions Transaction[] @relation("SellerTransactions")
+  buyerOrders          Order[]       @relation("BuyerOrders")
+  sellerOrders         Order[]       @relation("SellerOrders")
+  transactionsAsSeller Transaction[] @relation("SellerTransactions")
+  transactionsAsBuyer  Transaction[] @relation("BuyerTransactions")
 
   // Avis et favoris
   reviews   Review[]
@@ -136,34 +161,41 @@ model User {
   disputesAsSeller Dispute[] @relation("SellerDisputes")
 
   // Parrainage
-  referrals  Referral[] @relation("UserReferrals")
-  referredBy Referral[] @relation("ReferredUsers")
+  referrals        Referral[] @relation("UserReferrals")
+  referredBy       Referral[] @relation("ReferredUsers")
+  Refund           Refund[]
+  refundsRequested Refund[]   @relation("RefundRequester")
+  refundsApproved  Refund[]   @relation("RefundApprover")
 }
 
-model Address {
-  id             Int     @id @default(autoincrement())
-  userId         Int
-  street         String
-  city           String
-  country        String
-  zipCode        String
-  isDefault      Boolean @default(false)
-  user           User    @relation(fields: [userId], references: [id])
-  userAsDefault  User?   @relation("DefaultAddress") // Relation inverse
-  shippingOrders Order[] @relation("ShippingAddress")
-  billingOrders  Order[] @relation("BillingAddress")
+// Modèle Order
+model Order {
+  id                Int         @id @default(autoincrement())
+  buyerId           Int
+  sellerId          Int
+  totalPrice        Float
+  status            OrderStatus @default(PENDING)
+  shippingCost      Float       @default(0)
+  shippingAddressId Int?
+  billingAddressId  Int?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  products        Product[]     @relation("OrderProducts")
+  buyer           User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller          User          @relation("SellerOrders", fields: [sellerId], references: [id])
+  transactions    Transaction[]
+  disputes        Dispute[]
+  shippingAddress Address?      @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  billingAddress  Address?      @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  Payment         Payment[]
+
+  @@index([buyerId])
+  @@index([sellerId])
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String
-  authorId  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  author    User     @relation(fields: [authorId], references: [id])
-}
-
+// Modèle Product
 model Product {
   id           Int              @id @default(autoincrement())
   userId       Int
@@ -191,8 +223,154 @@ model Product {
   orders   Order[]    @relation("OrderProducts")
   events   Event[]
   disputes Dispute[]
+
+  @@index([userId])
+  @@index([categoryId])
 }
 
+// Modèle Transaction principal
+model Transaction {
+  id                    Int               @id @default(autoincrement())
+  amount                Float
+  type                  TransactionType
+  status                TransactionStatus
+  orderId               Int?
+  sellerId              Int
+  buyerId               Int
+  commission            Float? // Commission de la plateforme
+  stripePaymentIntentId String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  description           String?
+  metadata              Json? // Pour stocker des informations supplémentaires
+  currency              String            @default("EUR")
+
+  // Relations
+  order  Order? @relation(fields: [orderId], references: [id])
+  seller User   @relation("SellerTransactions", fields: [sellerId], references: [id])
+  buyer  User   @relation("BuyerTransactions", fields: [buyerId], references: [id])
+
+  @@index([stripePaymentIntentId])
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([buyerId])
+}
+
+// Modèle pour les paiements (historique détaillé des tentatives de paiement)
+model Payment {
+  id            Int             @id @default(autoincrement())
+  transactionId String? // ID de transaction externe (Stripe)
+  orderId       Int
+  amount        Float
+  currency      String          @default("EUR")
+  provider      PaymentProvider
+  status        PaymentStatus
+  errorMessage  String?
+  metadata      Json? // Données supplémentaires spécifiques au provider
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([transactionId])
+}
+
+// Modèle pour les remboursements
+model Refund {
+  id            Int           @id @default(autoincrement())
+  transactionId Int
+  amount        Float
+  reason        String
+  status        PaymentStatus
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  processedAt   DateTime?
+  requestedById Int
+  approvedById  Int?
+
+  // Relations
+  requestedBy User  @relation("RefundRequester", fields: [requestedById], references: [id])
+  approvedBy  User? @relation("RefundApprover", fields: [approvedById], references: [id])
+  User        User? @relation(fields: [userId], references: [id])
+  userId      Int?
+
+  @@index([transactionId])
+}
+
+// Modèle pour les logs de paiement
+model PaymentLog {
+  id            Int      @id @default(autoincrement())
+  transactionId String? // ID de transaction externe
+  event         String // Type d'événement (payment.success, payment.failed, etc.)
+  data          Json // Données complètes de l'événement
+  createdAt     DateTime @default(now())
+
+  @@index([transactionId])
+}
+
+// Modèle pour les frais et commissions
+model Fee {
+  id            Int      @id @default(autoincrement())
+  transactionId Int
+  type          String // PLATFORM_FEE, PAYMENT_PROCESSING, etc.
+  amount        Float
+  percentage    Float? // Si le frais est un pourcentage
+  description   String?
+  createdAt     DateTime @default(now())
+
+  @@index([transactionId])
+}
+
+// Modèle pour la configuration des frais
+model FeeConfiguration {
+  id                  Int      @id @default(autoincrement())
+  name                String   @unique // ex: "STANDARD_COMMISSION"
+  defaultPercentage   Float
+  minimumAmount       Float?
+  maximumAmount       Float?
+  isActive            Boolean  @default(true)
+  applicableUserTypes String[] // ["PROFESSIONAL", "INDIVIDUAL"]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Modèle Address
+model Address {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  street    String
+  city      String
+  country   String
+  zipCode   String
+  isDefault Boolean @default(false)
+
+  // Relations
+  user           User    @relation(fields: [userId], references: [id])
+  userAsDefault  User?   @relation("DefaultAddress")
+  shippingOrders Order[] @relation("ShippingAddress")
+  billingOrders  Order[] @relation("BillingAddress")
+
+  @@index([userId])
+}
+
+// Modèle Post (Articles/Blog)
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  authorId  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])
+}
+
+// Modèle Category
 model Category {
   id          Int     @id @default(autoincrement())
   name        String  @unique
@@ -206,31 +384,11 @@ model Category {
   children              Category[]             @relation("ParentChild")
   products              Product[]
   categorySubscriptions CategorySubscription[]
+
+  @@index([parentId])
 }
 
-model Order {
-  id                Int         @id @default(autoincrement())
-  buyerId           Int
-  sellerId          Int
-  totalPrice        Float
-  status            OrderStatus
-  shippingCost      Float       @default(0)
-  shippingAddressId Int? // Nouveau champ
-  billingAddressId  Int? // Nouveau champ
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  // Relations
-  products        Product[]     @relation("OrderProducts")
-  buyer           User          @relation("BuyerOrders", fields: [buyerId], references: [id])
-  seller          User          @relation("SellerOrders", fields: [sellerId], references: [id])
-  transactions    Transaction[]
-  disputes        Dispute[]
-  payments        Payment[]
-  shippingAddress Address?      @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
-  billingAddress  Address?      @relation("BillingAddress", fields: [billingAddressId], references: [id])
-}
-
+// Modèle Review
 model Review {
   id        Int      @id @default(autoincrement())
   productId Int
@@ -238,48 +396,30 @@ model Review {
   rating    Int // 1 à 5
   comment   String?
   createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([userId])
 }
 
+// Modèle Wishlist
 model Wishlist {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User      @relation(fields: [userId], references: [id])
-}
-
-model Transaction {
   id        Int      @id @default(autoincrement())
-  orderId   Int
-  amount    Float
+  userId    Int
   createdAt DateTime @default(now())
-  buyerId   Int
-  sellerId  Int
+  updatedAt DateTime @updatedAt
 
   // Relations
-  order  Order @relation(fields: [orderId], references: [id])
-  buyer  User  @relation("BuyerTransactions", fields: [buyerId], references: [id])
-  seller User  @relation("SellerTransactions", fields: [sellerId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  products Product[]
+
+  @@index([userId])
 }
 
-model Payment {
-  id            Int             @id @default(autoincrement())
-  orderId       Int
-  amount        Float
-  currency      String          @default("EUR")
-  provider      PaymentProvider
-  status        PaymentStatus
-  transactionId String // ID de transaction du provider
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  // Relations
-  order Order @relation(fields: [orderId], references: [id])
-}
-
+// Modèle Event
 model Event {
   id          Int       @id @default(autoincrement())
   name        String
@@ -289,15 +429,21 @@ model Event {
   products    Product[]
 }
 
+// Modèle UserFeedback
 model UserFeedback {
   id        Int      @id @default(autoincrement())
   userId    Int
   content   String
   rating    Int
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
+// Modèle CategorySubscription
 model CategorySubscription {
   id         Int      @id @default(autoincrement())
   userId     Int
@@ -307,8 +453,12 @@ model CategorySubscription {
   // Relations
   user     User     @relation(fields: [userId], references: [id])
   category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([categoryId])
 }
 
+// Modèle FavoriteSeller
 model FavoriteSeller {
   id        Int      @id @default(autoincrement())
   userId    Int
@@ -318,8 +468,12 @@ model FavoriteSeller {
   // Relations
   user   User @relation(name: "UserFavorites", fields: [userId], references: [id])
   seller User @relation(name: "SellerFavorites", fields: [sellerId], references: [id])
+
+  @@index([userId])
+  @@index([sellerId])
 }
 
+// Modèle Message
 model Message {
   id         Int      @id @default(autoincrement())
   senderId   Int
@@ -330,15 +484,22 @@ model Message {
   // Relations
   sender   User @relation("messageSender", fields: [senderId], references: [id])
   receiver User @relation("messageReceiver", fields: [receiverId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
 }
 
+// Modèle CommunicationPreference
 model CommunicationPreference {
   id         Int     @id @default(autoincrement())
   userId     Int     @unique
   emailOptIn Boolean @default(true)
-  user       User    @relation(fields: [userId], references: [id])
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
 }
 
+// Modèle EmailLog
 model EmailLog {
   id      Int      @id @default(autoincrement())
   userId  Int?
@@ -346,9 +507,14 @@ model EmailLog {
   subject String
   content String
   sentAt  DateTime @default(now())
-  user    User?    @relation(fields: [userId], references: [id])
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
+// Modèle Dispute
 model Dispute {
   id          Int           @id @default(autoincrement())
   orderId     Int
@@ -367,8 +533,14 @@ model Dispute {
   product Product @relation(fields: [productId], references: [id])
   buyer   User    @relation("BuyerDisputes", fields: [buyerId], references: [id])
   seller  User    @relation("SellerDisputes", fields: [sellerId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([buyerId])
+  @@index([sellerId])
 }
 
+// Modèle Referral
 model Referral {
   id            Int       @id @default(autoincrement())
   referrerId    Int
@@ -381,4 +553,7 @@ model Referral {
   // Relations
   referrer User @relation("UserReferrals", fields: [referrerId], references: [id])
   referred User @relation("ReferredUsers", fields: [referredId], references: [id])
+
+  @@index([referrerId])
+  @@index([referredId])
 }

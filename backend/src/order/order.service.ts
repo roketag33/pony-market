@@ -84,8 +84,8 @@ export class OrderService {
         const payment = await this.paymentService.initiatePayment({
           orderId: order.id,
           amount: order.totalPrice + order.shippingCost,
-          currency: 'EUR',
-          customerId: order.buyerId,
+          buyerId: order.buyerId, // Changé de customerId à buyerId
+          sellerId: order.sellerId, // Ajout du sellerId requis
         });
 
         // Émettre l'événement
@@ -122,7 +122,7 @@ export class OrderService {
             lastName: true,
           },
         },
-        payments: true,
+        Payment: true,
       },
     });
 
@@ -140,7 +140,7 @@ export class OrderService {
       },
       include: {
         products: true,
-        payments: {
+        Payment: {
           select: {
             status: true,
             amount: true,
