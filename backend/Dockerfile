@@ -1,36 +1,50 @@
 FROM node:18-alpine
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Install necessary dependencies
+# Installation des dépendances système
 RUN apk add --no-cache \
-    build-base \
     python3 \
-    netcat-openbsd \
-    openssl
+    make \
+    g++ \
+    libc6-compat
 
-# Copy yarn files first
-COPY package.json yarn.lock ./
+# Création d'un utilisateur non-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs --ingroup nodejs && \
+    chown -R nestjs:nodejs /app
 
+# Copie des fichiers de configuration
+COPY --chown=nestjs:nodejs package*.json yarn.lock ./
 
-RUN yarn global add @nestjs/cli
+# Installation des dépendances globales nécessaires
+RUN yarn global add prisma
 
-# Install project dependencies
-RUN yarn install --frozen-lockfile
-COPY prisma ./prisma/
-
-# Install dependencies with yarn
+# Installation des dépendances du projet
 RUN yarn install
 
-# Copy source
-COPY . .
+# Copie des fichiers Prisma
+COPY --chown=nestjs:nodejs prisma ./prisma/
 
-# Generate Prisma Client
-RUN yarn prisma generate
+# Génération du client Prisma
+RUN yarn prisma:generate
 
-# Expose ports
-EXPOSE 3000
-EXPOSE 9229
+# Copie du reste des fichiers de configuration
+COPY --chown=nestjs:nodejs tsconfig*.json ./
+COPY --chown=nestjs:nodejs webpack.config.js ./
 
-# Start development mode with yarn
+# Copie du code source
+COPY --chown=nestjs:nodejs . .
+
+# Configuration de l'environnement
+ENV NODE_ENV=development
+ENV PORT=3000
+
+# Exposition des ports
+EXPOSE $PORT 9229
+
+# Passage à l'utilisateur non-root
+USER nestjs
+
+# Commande de démarrage
 CMD ["yarn", "start:dev"]

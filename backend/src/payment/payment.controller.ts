@@ -18,10 +18,10 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
-import { PrismaService } from '../tools/prisma/prisma.service';
+import { PrismaService } from '@/tools/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../tools/common/decorators/auth/current-user.decorator';
+import { JwtAuthGuard } from '@/tools/common/guards';
+import { CurrentUser } from '@/tools/common/decorators';
 import { User } from '@prisma/client';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { RequestRefundDto } from './dto/request-refund.dto';

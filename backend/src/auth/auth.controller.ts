@@ -7,7 +7,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './guards/local-auth.guard';
+import { LocalAuthGuard } from '../tools/common/guards/local-auth.guard';
 import { Logindto } from './dto/login.dto';
 
 @Controller('auth')

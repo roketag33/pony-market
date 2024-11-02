@@ -1,10 +1,13 @@
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
-const { sentryWebpackPlugin } = require("@sentry/webpack-plugin");
+const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 
-module.exports = function(options) {
+module.exports = function (options) {
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+
   return {
     ...options,
+    mode: isDevelopment ? 'development' : 'production',
     entry: ['./src/main.ts'],
     target: 'node',
     externals: [nodeExternals()],
@@ -12,31 +15,24 @@ module.exports = function(options) {
       rules: [
         {
           test: /\.ts$/,
-          loader: 'ts-loader',
+          use: {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: isDevelopment,
+            },
+          },
           exclude: /node_modules/,
         },
       ],
     },
     resolve: {
       extensions: ['.ts', '.js'],
+      plugins: [new TsconfigPathsPlugin()],
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
+      // Ajout de la résolution des modules Prisma
+      modules: ['node_modules'],
     },
-    output: {
-      path: path.resolve(__dirname, 'dist'),
-      filename: 'main.js',
-    },
-    devtool: "source-map",
-    plugins: [
-      sentryWebpackPlugin({
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-        org: "poney-market",
-        project: "node-nestjs",
-        include: './dist',
-        ignore: ['node_modules', 'webpack.config.js'],
-        configFile: 'sentry.properties',
-        release: {
-          name: process.env.npm_package_version || '1.0.0'
-        }
-      })
-    ],
   };
 };

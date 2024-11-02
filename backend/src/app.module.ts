@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { APP_FILTER } from '@nestjs/core';
-import { SentryModule } from '@sentry/nestjs/setup';
-import { SentryGlobalFilter } from '@sentry/nestjs/setup';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CustomThrottlerGuard } from './tools/common/guards';
 
 // Controllers & Services
 import { AppController } from './app.controller';
@@ -19,6 +20,7 @@ import { CategoryModule } from './Category/category.module';
 import { OrderModule } from './order/order.module';
 import { MailModule } from './mail/mail.module';
 import { PaymentModule } from './payment/payment.module';
+import { HealthModule } from '@/health/health.module';
 
 @Module({
   imports: [
@@ -26,6 +28,14 @@ import { PaymentModule } from './payment/payment.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
+
     EventEmitterModule.forRoot(),
     DevtoolsModule.register({
       http: process.env.NODE_ENV !== 'production',
@@ -40,11 +50,16 @@ import { PaymentModule } from './payment/payment.module';
     OrderModule,
     MailModule,
     PaymentModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     MailService,
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
+    },
     {
       provide: APP_FILTER,
       useClass: SentryGlobalFilter,

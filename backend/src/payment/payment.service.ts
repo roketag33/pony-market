@@ -24,7 +24,7 @@ export class PaymentService {
     private readonly eventEmitter: EventEmitter2,
   ) {
     this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY'), {
-      apiVersion: '2024-09-30.acacia',
+      apiVersion: '2024-10-28.acacia',
     });
   }
 

@@ -16,7 +16,10 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src"],
   "watchOptions": {
@@ -25,8 +28,5 @@
     "fallbackPolling": "dynamicPriority",
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["node_modules", "dist"]
-  },
-  "paths": {
-    "@sentry/*": ["./node_modules/@sentry/*"]
   }
 }

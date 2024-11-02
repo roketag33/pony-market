@@ -1,23 +1,26 @@
-# Use Node.js LTS version
-FROM node:18-alpine
+# Stage de développement
+FROM node:18-alpine AS runner
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json yarn.lock ./
+# Installation des dépendances systèmes nécessaires
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat
 
-# Install dependencies with cache mounting
+# Copie des fichiers de configuration
+COPY package*.json yarn.lock ./
+
+# Installation des dépendances
 RUN yarn install
 
-# Change ownership of node_modules to non-root user
-RUN chown -R node:node /app
+# Copie du code source
+COPY . .
 
-# Switch to non-root user
-USER node
+# Exposition du port
+EXPOSE 5173
 
-# Expose Vite dev server port
-EXPOSE 7173
-
-# Start Vite dev server with host flag to allow external access
-CMD ["yarn", "run", "dev", "--host"]
+# Commande de développement
+CMD ["yarn", "dev", "--host", "0.0.0.0"]

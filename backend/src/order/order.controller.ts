@@ -15,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../tools/common/guards/jwt-auth.guard';
 import { CurrentUser } from '../tools/common/decorators/auth/current-user.decorator';
 import { User } from '@prisma/client';
 

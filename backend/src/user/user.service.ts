@@ -12,8 +12,8 @@ import * as handlebars from 'handlebars';
 import { v4 as uuidv4 } from 'uuid';
 import { addHours } from 'date-fns';
 
-import { PrismaService } from '../tools/prisma/prisma.service';
-import { MailService } from '../mail/mail.service';
+import { PrismaService } from '@/tools/prisma/prisma.service';
+import { MailService } from '@/mail/mail.service';
 import { ListUsersResponsedto } from './dto/Responses/list-users-response.dto';
 import { CreateUserdto } from './dto/create-user.dto';
 import { UserResponsedto } from './dto/Responses/user-response.dto';
